@@ -1,0 +1,9 @@
+#! /usr/bin/env python
+
+import ble
+import sys
+
+if __name__ == "__main__":
+    ble = ble.BleClient()
+    sys.sleep(10)
+    print(ble.devices)
