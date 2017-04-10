@@ -1,0 +1,7 @@
+#!/usr/bin/sh
+pkg_target_post_unpack() {
+	ln -nsf $pkg_target_dest/org.coiot.service /usr/share/dbus-1/system-services/
+	ln -nsf $pkg_target_dest/dbus-org.coiot.service /etc/systemd/system/
+	
+	ln -nsf $pkg_target_dest/org.coiot.conf /usr/share/dbus-1/system.d/
+}

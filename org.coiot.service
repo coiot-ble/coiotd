@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=org.coiot
+Exec=/bin/false
+User=root
+SystemdService=dbus-org.coiot.service

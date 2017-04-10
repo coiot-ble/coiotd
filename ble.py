@@ -1,4 +1,37 @@
 import bluez
+from gi.repository import GLib
+
+
+class BleAutomationIODigitalSingle:
+    def __init__(self, ble_device, index):
+        self.ble = ble_device
+        self.index = index
+
+    @property
+    def on(self):
+        return self.ble.read(self.index)
+
+    @on.setter
+    def on(self, value):
+        return self.ble.write(value, self.index)
+
+class BleAutomationIODigital:
+    def __init__(self, characteristic):
+        self.characteristic = characteristic
+        self.gpios = [ BleAutomationIODigitalSingle(self, i) for i in range(0, len(self.read())) ]
+
+    def read(self, offset=None):
+        if offset is not None:
+            return bool(self.characteristic.ReadValue({"offset": GLib.Variant('q', offset)})[0])
+        else:
+            return self.characteristic.ReadValue({})
+
+    def write(self, value, offset=None):
+        if offset is not None:
+            self.characteristic.WriteValue([int(value)], {"offset": GLib.Variant('q', offset)})
+        else:
+            self.characteristic.WriteValue(value, {})
+
 
 def formatUUID(*uuids):
     uuid_r = []
@@ -9,10 +42,11 @@ def formatUUID(*uuids):
             uuid_r.append(uuid)
     return tuple(uuid_r) if len(uuid_r) > 1 else uuid_r[0]
 
+
 class BleClient:
     def __init__(self, adapter='hci0'):
         self.adapter = bluez.DBusBluez().adapters[adapter]
-        self.adapter.Powered = True
+        self.adapter.proxy.Powered = True
 
     @property
     def devices(self):
@@ -37,6 +71,14 @@ class BleClient:
                     r[a] = c
                     break
         return r
+
+    def get_every_single_gpio(self):
+        gpios = {}
+        cc = self.get_characteristics_by_uuid(0x1815, 0x2a56)
+        for n, c in cc.items():
+            gpios[n] = BleAutomationIODigital(c).gpios
+
+        return gpios
 
     def connect(self):
         for d in self.devices.values():
