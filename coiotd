@@ -5,6 +5,12 @@ import ble
 import time
 import pydbus
 
+COIOT_DISPLAYABLE1_DBUS="""
+<interface name="org.coiot.Displayable1">
+    <property name="Name" type="s" access="readwrite" />
+    <property name="Type" type="s" access="read" />
+</interface>
+"""
 COIOT_SWITCHABLE1_DBUS="""
 <interface name="org.coiot.Switchable1">
     <property name="On" type="b" access="readwrite" />
@@ -19,7 +25,7 @@ class CoiotDevice:
     discovered at runtime through a generic mechanism.
     """
 
-    def __init__(self, interfaces):
+    def __init__(self, *interfaces):
         self.interfaces = interfaces
 
     def keys(self):
@@ -41,9 +47,21 @@ class CoiotDevice:
     def __iter__(self):
         return iter(self.keys())
 
-class CoiotLamp(CoiotDevice):
+class CoiotDisplayableDevice(CoiotDevice):
+    def __init__(self, *interfaces):
+        super().__init__(COIOT_DISPLAYABLE1_DBUS, *interfaces)
+
+    def keys(self):
+        return ["Name", "Type"].extend(super().keys())
+
+    @property
+    def Name(self):
+        return type(self).__name__
+
+class CoiotLamp(CoiotDisplayableDevice):
     def __init__(self, device):
         super().__init__(COIOT_SWITCHABLE1_DBUS)
+        self.Type = "Lamp"
         self.device = device
 
     def keys(self):
