@@ -105,7 +105,7 @@ class CoiotDBus:
     def __init__(self):
         self.ble = CoiotBle()
         self.bus = pydbus.SystemBus()
-        self.publication = self.bus.publish('org.coiot', ('/org/coiot', self, '<node></node>'))
+        self.publication = self.bus.publish('org.coiot', ('/org/coiot', self, '<node><interface name="org.freedesktop.Introspectable"></interface></node>'))
         self.register_devices()
 
     def register_devices(self):
