@@ -5,6 +5,8 @@ import ble
 import time
 import pydbus
 
+from decorators import cached
+
 COIOT_DISPLAYABLE1_DBUS="""
 <interface name="org.coiot.Displayable1">
     <property name="Name" type="s" access="readwrite" />
@@ -68,6 +70,7 @@ class CoiotLamp(CoiotDisplayableDevice):
         return ["On"].extend(super().keys())
 
     @property
+    @cached(500)
     def On(self):
         return self.device.on
 
