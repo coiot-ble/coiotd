@@ -91,28 +91,6 @@ class CoiotBle:
                 d = CoiotLamp(g)
                 self.devices[n] = d
 
-class CoiotPublicDevice:
-    """
-    Wrapper to manipulate the public COIoT interface of an
-    object.
-    """
-    def __init__(self, device):
-        self.__device = device
-
-    def __getattr__(self, n):
-        if n.startswith('_'):
-            return self.__dict__[n]
-        return self.__device[n]
-
-    def __setattr__(self, n, value):
-        self.__device[n] = value
-
-    def __delattr__(self, n):
-        del self.__device[n]
-
-    def __vars__(self):
-        return self.__device.keys()
-
 class CoiotDBusDevice:
     def __init__(self, device, path):
         self.device = device
