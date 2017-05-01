@@ -98,7 +98,7 @@ The units can be the following:
 - CO2 ppm
 - CO ppm
 - NOX ppm
-- Small particules ppm
+- Small particles ppm
 - Gram
 - Watt
 - WattHour
