@@ -73,6 +73,7 @@ manual user intervention. For many object, "on" can be defined as the state wher
 consumes current.
 
 - **On**: indicates whether the device is "on" (True) or "off" (False).
+- **SwitchableLog(from, to)** returns a list of tuples `(date, on)` measured between the two dates, with `from`, `to` and `date` as UTC timestamps
 
 This interface must have one of the following types:
 - Lamp: That is a special case, as turning the device on will produce light
@@ -87,16 +88,20 @@ A device with sensing capability
 - **Value**: raw sensor value
 - **Exponent**: an exponent of 10, 3 being 10^3=kilos
 - **Unit**
+- **MeasureDate**
+- **SensorLog(from, to)** returns a list of tuples `(date, value)` measured between the two dates, with `from`, `to` and `date` as UTC timestamps
 
 The units can be the following:
-- degrees C
-- degrees F
+- degree C
+- degree F
 - H2O ppm
 - CO2 ppm
 - CO ppm
 - NOX ppm
 - Small particules ppm
-- Grams
+- Gram
+- Watt
+- WattHour
 
 The type must be one of the following:
 - Thermometer
