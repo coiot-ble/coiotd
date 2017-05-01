@@ -36,7 +36,7 @@ Other example, a temperature sensor hub with 3 slave sensors in the room:
 A temperature and humidity sensor for a potted plant, to be displayed together:
 ```
 /org/coiot/<id> -> .Displayable1(type=Plant) .Sensor1(without any property)
-                /1 -> .Sensor1(unit=H20 ppm, exponent=4)
+                /1 -> .Sensor1(unit=H2O ppm, exponent=4)
                 /2 -> .Sensor1(unit=degrees C, exponent=-1)
 ```
 

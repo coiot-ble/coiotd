@@ -47,7 +47,7 @@ being unique for each entry and never reused.
 * ID
 * Switchable: foreign key to switchable
 * Date
-* On
+* Value
 
 # UNIT
 * ID
