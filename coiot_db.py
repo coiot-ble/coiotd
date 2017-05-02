@@ -20,7 +20,7 @@ class Displayable:
         r = self.db.execute("""
             SELECT DISPLAYABLE.ID, DISPLAYABLE.Name, DISPLAYABLE_TYPE.Name
             FROM DISPLAYABLE
-            JOIN DISPLAYABLE_TYPE
+            LEFT JOIN DISPLAYABLE_TYPE
             ON DISPLAYABLE_TYPE.ID = DISPLAYABLE.Type
             WHERE Device = ?
             """, (self.id,)).fetchone()
@@ -32,13 +32,19 @@ class Displayable:
         return True
 
     @classmethod
-    def install(Cls, self, Name, Type):
-        r = self.db.execute("""
-            INSERT INTO DISPLAYABLE(Device, Name, Type)
-            SELECT ?, ?, ID
-            FROM DISPLAYABLE_TYPE
-            WHERE Name = ?
-            """, (self.id, Name, Type))
+    def install(Cls, self, Name, Type=None):
+        if Type is not None:
+            r = self.db.execute("""
+                INSERT INTO DISPLAYABLE(Device, Name, Type)
+                SELECT ?, ?, ID
+                FROM DISPLAYABLE_TYPE
+                WHERE Name = ?
+                """, (self.id, Name, Type))
+        else:
+            r = self.db.execute("""
+                INSERT INTO DISPLAYABLE(Device, Name)
+                VALUES(?, ?)
+                """, (self.id, Name))
         if r.lastrowid is None:
             raise Exception("Could not install the Displayable interface, have you specified a correct type ?")
         self.__id = r.lastrowid
@@ -64,21 +70,28 @@ class Displayable:
         return self.db.execute("""
             SELECT DISPLAYABLE_TYPE.Name
             FROM DISPLAYABLE
-            JOIN DISPLAYABLE_TYPE
+            LEFT JOIN DISPLAYABLE_TYPE
             ON DISPLAYABLE_TYPE.ID = DISPLAYABLE.Type
             WHERE DISPLAYABLE.ID = ?
             """, (self.__id,)).fetchone()[0]
 
     @Type.setter
     def Type(self, value):
-        self.db.execute("""
-            UPDATE DISPLAYABLE
-            SET Type = (
-                SELECT ID
-                FROM DISPLAYABLE_TYPE
-                WHERE Name = ?)
-            WHERE ID = ?
-            """, (value, self.__id,))
+        if value is None:
+            self.db.execute("""
+                UPDATE DISPLAYABLE
+                SET Type = NULL
+                WHERE ID = ?
+                """, (self.__id,))
+        else:
+            self.db.execute("""
+                UPDATE DISPLAYABLE
+                SET Type = (
+                    SELECT ID
+                    FROM DISPLAYABLE_TYPE
+                    WHERE Name = ?)
+                WHERE ID = ?
+                """, (value, self.__id,))
 
 @CoiotDBInterface.declare
 class Switchable:
@@ -201,7 +214,7 @@ class CoiotDB:
             d.setdefault(driver, []).append(CoiotDBDevice(self.db, did, parent))
         return d
 
-    def install(self, driver, parent):
+    def install(self, driver, parent=None):
         if parent is None:
             pdid = None
         else:
@@ -248,20 +261,20 @@ class CoiotDBUnitTest(CoiotDBTestSetup):
     def test_install_no_parent(self):
         self.setup()
 
-        d = self.db.install("BLE", None)
+        d = self.db.install("BLE")
         self.assertTrue('BLE' in self.db.devices)
         self.assertEqual(1, len(self.db.devices['BLE']))
 
     def test_install_with_parent(self):
         self.setup()
-        parent = self.db.install("BLE", None)
+        parent = self.db.install("BLE")
         device = self.db.install("BLE", parent)
         self.assertEqual(2, len(self.db.devices['BLE']))
 
     def test_install_switchable_inheritance(self):
         self.setup()
-        device = self.db.install("BLE", None)
-        d2 = self.db.install("BLE", None)
+        device = self.db.install("BLE")
+        d2 = self.db.install("BLE")
 
         device.install_interface(Switchable, On = False)
 
@@ -275,7 +288,7 @@ class OneDeviceTestSetup(CoiotDBTestSetup):
     def setup(self, cleanup=True, **kwargs):
         super().setup(cleanup=cleanup, **kwargs)
         if cleanup:
-            self.device = self.db.install("BLE", None)
+            self.device = self.db.install("BLE")
 
     def reload(self):
         self.setup(cleanup = False)
@@ -316,6 +329,20 @@ class DisplayableUnitTest(OneDeviceTestSetup):
         self.device.Type = "Wall Socket"
         self.reload()
         self.assertEqual("Wall Socket", self.device.Type)
+
+    def test_type_NULL(self):
+        self.setup()
+        self.device.Type = None
+        self.assertEqual(None, self.device.Type)
+        self.reload()
+        self.assertEqual(None, self.device.Type)
+
+    def test_install_type_NULL(self):
+        self.setup()
+        d2 = self.db.install("BLE")
+        d2.install_interface(Displayable, Name="Foo")
+        self.reload()
+        self.assertEqual(None, d2.Type)
 
 class SwitchableUnitTest(OneDeviceTestSetup):
     """
