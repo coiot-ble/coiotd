@@ -32,13 +32,13 @@ class Displayable:
         return True
 
     @classmethod
-    def install(Cls, self):
+    def install(Cls, self, Name, Type):
         r = self.db.execute("""
             INSERT INTO DISPLAYABLE(Device, Name, Type)
             SELECT ?, ?, ID
             FROM DISPLAYABLE_TYPE
             WHERE Name = ?
-            """, (self.id, self.name, self.type))
+            """, (self.id, Name, Type))
         if r.lastrowid is None:
             raise Exception("Could not install the Displayable interface, have you specified a correct type ?")
         self.__id = r.lastrowid
@@ -97,12 +97,13 @@ class Switchable:
         return True
 
     @classmethod
-    def install(Cls, self):
+    def install(Cls, self, On):
         r = self.db.execute("""
             INSERT INTO SWITCHABLE(Device, FutureOn)
             VALUES(?, ?);
-            """, (self.id, self.future_on,))
+            """, (self.id, On,))
         self.__id = r.lastrowid
+        self.On = On
 
     @property
     def On(self):
@@ -162,11 +163,11 @@ def CoiotDBDevice(*arg, **kw):
                 if Interface.load(self):
                     CompositeCls.__bases__ = (Interface,) + CompositeCls.__bases__
 
-            def install_interface(self, Interface):
+            def install_interface(self, Interface, *args, **kwargs):
                 """
                 Set up support for the given interface in the database
                 """
-                Interface.install(self)
+                Interface.install(self, *args, **kwargs)
                 CompositeCls.__bases__ = (Interface,) + CompositeCls.__bases__
 
         return CompositeCls
@@ -262,8 +263,7 @@ class CoiotDBUnitTest(CoiotDBTestSetup):
         device = self.db.install("BLE", None)
         d2 = self.db.install("BLE", None)
 
-        device.future_on = False
-        device.install_interface(Switchable)
+        device.install_interface(Switchable, On = False)
 
         self.assertTrue(isinstance(device, Switchable))
         self.assertTrue(not isinstance(d2, Switchable))
@@ -294,9 +294,7 @@ class DisplayableUnitTest(OneDeviceTestSetup):
     def setup(self, cleanup=True, **kwargs):
         super().setup(cleanup=cleanup, **kwargs)
         if cleanup:
-            self.device.name = "Desk lamp"
-            self.device.type = "Lamp"
-            self.device.install_interface(Displayable)
+            self.device.install_interface(Displayable, Name = "Desk lamp", Type = "Lamp")
 
     def test_setup_install(self):
         self.setup()
@@ -326,8 +324,7 @@ class SwitchableUnitTest(OneDeviceTestSetup):
     def setup(self, cleanup=True, **kwargs):
         super().setup(cleanup=cleanup, **kwargs)
         if cleanup:
-            self.device.future_on = False
-            self.device.install_interface(Switchable)
+            self.device.install_interface(Switchable, On = False)
 
     def test_setup_install(self):
         self.setup()
@@ -372,11 +369,8 @@ class SwitchableAndDisplayableUnitTest(OneDeviceTestSetup):
     def setup(self, cleanup=True, **kwargs):
         super().setup(cleanup=cleanup, **kwargs)
         if cleanup:
-            self.device.future_on = False
-            self.device.install_interface(Switchable)
-            self.device.name = "Bed socket"
-            self.device.type = "Wall Socket"
-            self.device.install_interface(Displayable)
+            self.device.install_interface(Switchable, On = False)
+            self.device.install_interface(Displayable, Name = "Bed socket", Type = "Wall socket")
 
     def test_setup_install(self):
         self.setup()
