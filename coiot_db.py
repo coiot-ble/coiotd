@@ -209,25 +209,25 @@ class CoiotDB:
 
     @property
     def devices(self):
-        d = {}
-        for driver, did, parent in self.db.execute("""
-            SELECT Driver, ID, Parent
+        d = []
+        for did, parent in self.db.execute("""
+            SELECT ID, Parent
             FROM DEVICE
             WHERE ONLINE = 1;
             """):
-            d.setdefault(driver, []).append(CoiotDBDevice(self.db, did, parent))
+            d.append(CoiotDBDevice(self.db, did, parent))
         return d
 
-    def install(self, driver, parent=None):
+    def install(self, parent=None):
         if parent is None:
             pdid = None
         else:
             pdid = parent.id
 
         r = self.db.execute("""
-            INSERT INTO DEVICE(Driver, Parent, Online)
-            VALUES(?, ?, ?);""",
-            (driver, pdid, True))
+            INSERT INTO DEVICE(Parent, Online)
+            VALUES(?, ?);""",
+            (pdid, True))
         device = CoiotDBDevice(self.db, r.lastrowid, pdid)
         return device
 
@@ -265,20 +265,19 @@ class CoiotDBUnitTest(CoiotDBTestSetup):
     def test_install_no_parent(self):
         self.setup()
 
-        d = self.db.install("BLE")
-        self.assertTrue('BLE' in self.db.devices)
-        self.assertEqual(1, len(self.db.devices['BLE']))
+        d = self.db.install()
+        self.assertEqual(1, len(self.db.devices))
 
     def test_install_with_parent(self):
         self.setup()
-        parent = self.db.install("BLE")
-        device = self.db.install("BLE", parent)
-        self.assertEqual(2, len(self.db.devices['BLE']))
+        parent = self.db.install()
+        device = self.db.install(parent)
+        self.assertEqual(2, len(self.db.devices))
 
     def test_install_switchable_inheritance(self):
         self.setup()
-        device = self.db.install("BLE")
-        d2 = self.db.install("BLE")
+        device = self.db.install()
+        d2 = self.db.install()
 
         device.install_interface(Switchable, On = False)
 
@@ -292,17 +291,16 @@ class OneDeviceTestSetup(CoiotDBTestSetup):
     def setup(self, cleanup=True, **kwargs):
         super().setup(cleanup=cleanup, **kwargs)
         if cleanup:
-            self.device = self.db.install("BLE")
+            self.device = self.db.install()
 
     def reload(self):
         self.setup(cleanup = False)
-        self.device = self.db.devices['BLE'][0]
+        self.device = self.db.devices[0]
 
     def test_reload(self):
         self.setup(cleanup = False)
-        self.assertTrue('BLE' in self.db.devices)
-        self.assertEqual(1, len(self.db.devices['BLE']))
-        self.device = self.db.devices['BLE'][0]
+        self.assertEqual(1, len(self.db.devices))
+        self.device = self.db.devices[0]
 
 class DisplayableUnitTest(OneDeviceTestSetup):
     """
@@ -343,7 +341,7 @@ class DisplayableUnitTest(OneDeviceTestSetup):
 
     def test_install_type_NULL(self):
         self.setup()
-        d2 = self.db.install("BLE")
+        d2 = self.db.install()
         d2.install_interface(Displayable, Name="Foo")
         self.reload()
         self.assertEqual(None, d2.Type)

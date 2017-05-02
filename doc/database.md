@@ -19,14 +19,9 @@ being unique for each entry and never reused.
 # DEVICE
 * ID
 * Parent: foreign key to DEVICE. eg if foo is child of device bar, its Parent field will be set to bar
-* Driver: foreign key to DRIVER. Code driver to use to join the device
 * Online
 * LastOnline
 * Error
-
-# DRIVER
-* ID
-* Name: eg BLE
 
 # DISPLAYABLE_TYPE
 * ID
@@ -78,3 +73,13 @@ UnitFrom = (UnitTo - Offset) / Scale
 * Sensor: foreign key to SENSOR
 * Date
 * Value
+
+# Private tables
+
+Following tables are used for storing some informations, like drivers data. They are not exported
+through DBus.
+
+# DRIVER_BLE
+* ID
+* Device: foreign key to DEVICE
+* Mac: BLE device MAC address

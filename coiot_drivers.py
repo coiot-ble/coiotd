@@ -1,4 +1,5 @@
 import threading
+import coiot_db
 
 class DriverActionsList:
     class ActionList:
@@ -27,6 +28,34 @@ class DriverActionsList:
             else:
                 # timeout
                 return None
+
+@coiot_db.CoiotDBInterface.declare
+class BLEDriverParameters:
+    @classmethod
+    def load(Cls, self):
+        r = self.db.execute("""
+            SELECT ID, Mac
+            FROM DRIVER_BLE
+            WHERE Device = ?
+            """, (self.id,)).fetchone()
+        if r is None:
+            return False
+
+        self.__id, self.mac = r
+        self.driver = BluezBLEDevice(self)
+        return True
+
+    @classmethod
+    def install(Cls, self, Mac):
+        r = self.db.execute("""
+            INSERT INTO DRIVER_BLE(Device, Mac)
+            VALUES(?, ?)
+            """, (self.id, Mac))
+        self.__id = r.lastrowid
+
+class BluezBLEDevice:
+    def __init__(self, db_device):
+        self.db_device = db_device
 
 class BluezBLEDriver:
     class BluezThread(threading.Thread):
