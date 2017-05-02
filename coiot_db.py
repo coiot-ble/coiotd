@@ -192,6 +192,10 @@ def CoiotDBDevice(*arg, **kw):
             self.pdid = pdid
             CoiotDBInterface.load_all(self)
 
+            def forbidden_attr(self, k, *args):
+                raise AttributeError(k)
+            self.__setattr__ = forbidden_attr
+
     return CoiotDBDevice(*arg, **kw)
 
 class CoiotDB:
