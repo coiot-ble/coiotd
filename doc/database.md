@@ -19,8 +19,12 @@ being unique for each entry and never reused.
 # DEVICE
 * ID
 * Parent: foreign key to DEVICE. eg if foo is child of device bar, its Parent field will be set to bar
+
+# DEVICE_STATUS_LOG
+* ID
+* Device: foreign key to DEVICE
+* Date
 * Online
-* LastOnline
 * Error
 
 # DISPLAYABLE_TYPE

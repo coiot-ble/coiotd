@@ -125,6 +125,7 @@ class Switchable:
             FROM SWITCHABLE_LOG
             WHERE Switchable = ?
             ORDER BY ID DESC
+            LIMIT 1
             """, (self.__id,)).fetchone()[0])
 
     @On.setter
@@ -186,15 +187,43 @@ def CoiotDBDevice(*arg, **kw):
         return CompositeCls
 
     class CoiotDBDevice(Composite()):
-        def __init__(self, db, did, pdid):
+        def __init__(self, db, did, pdid, Error=False):
             self.db = db
             self.id = did
             self.pdid = pdid
+            self.online = False
+            self.error = Error
             CoiotDBInterface.load_all(self)
 
             def forbidden_attr(self, k, *args):
                 raise AttributeError(k)
             self.__setattr__ = forbidden_attr
+
+        def log_status(self):
+            self.db.execute("""
+                INSERT INTO DEVICE_STATUS_LOG(Device, Online, Error)
+                VALUES(?, ?, ?)
+                """, (self.id, self.online, self.error))
+
+        @property
+        def Online(self):
+            return self.online
+
+        @Online.setter
+        def Online(self, v):
+            if self.online != v:
+                self.online = v
+                self.log_status()
+
+        @property
+        def Error(self):
+            return self.error
+
+        @Error.setter
+        def Error(self, v):
+            if self.error != v:
+                self.error = v
+                self.log_status()
 
     return CoiotDBDevice(*arg, **kw)
 
@@ -210,12 +239,15 @@ class CoiotDB:
     @property
     def devices(self):
         d = []
-        for did, parent in self.db.execute("""
-            SELECT ID, Parent
+        for did, pdid, Error in self.db.execute("""
+            SELECT DEVICE.ID, Parent, DEVICE_STATUS_LOG.Error
             FROM DEVICE
-            WHERE ONLINE = 1;
+            JOIN DEVICE_STATUS_LOG
+            ON DEVICE_STATUS_LOG.Device = DEVICE.ID
+            GROUP BY DEVICE.ID
+            ORDER BY DEVICE_STATUS_LOG.ID DESC
             """):
-            d.append(CoiotDBDevice(self.db, did, parent))
+            d.append(CoiotDBDevice(self.db, did, pdid, bool(Error)))
         return d
 
     def install(self, parent=None):
@@ -225,10 +257,14 @@ class CoiotDB:
             pdid = parent.id
 
         r = self.db.execute("""
-            INSERT INTO DEVICE(Parent, Online)
-            VALUES(?, ?);""",
-            (pdid, True))
+            INSERT INTO DEVICE(Parent)
+            VALUES(?)
+            """, (pdid,))
         device = CoiotDBDevice(self.db, r.lastrowid, pdid)
+        self.db.execute("""
+            INSERT INTO DEVICE_STATUS_LOG(Device)
+            VALUES(?)
+            """, (device.id,))
         return device
 
 import unittest
