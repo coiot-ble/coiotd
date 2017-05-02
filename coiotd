@@ -10,7 +10,7 @@ from decorators import cached
 COIOT_DISPLAYABLE1_DBUS="""
 <interface name="org.coiot.Displayable1">
     <property name="Name" type="s" access="readwrite" />
-    <property name="Type" type="s" access="read" />
+    <property name="Type" type="s" access="readwrite" />
 </interface>
 """
 COIOT_SWITCHABLE1_DBUS="""
