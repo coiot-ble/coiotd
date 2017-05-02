@@ -364,3 +364,21 @@ class SwitchableUnitTest(OneDeviceTestSetup):
         self.device.FutureOn = True
         self.reload()
         self.assertEqual(self.device.FutureOn, True)
+
+class SwitchableAndDisplayableUnitTest(OneDeviceTestSetup):
+    """
+    Test setup: a device that is switchable and displayable
+    """
+    def setup(self, cleanup=True, **kwargs):
+        super().setup(cleanup=cleanup, **kwargs)
+        if cleanup:
+            self.device.future_on = False
+            self.device.install_interface(Switchable)
+            self.device.name = "Bed socket"
+            self.device.type = "Wall Socket"
+            self.device.install_interface(Displayable)
+
+    def test_setup_install(self):
+        self.setup()
+        self.assertTrue(isinstance(self.device, Switchable))
+        self.assertTrue(isinstance(self.device, Displayable))
