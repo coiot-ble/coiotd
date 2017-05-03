@@ -1,4 +1,5 @@
-from gatt_uuid import formatUUID, UUID_SERVICE, UUID_CHARACTERISTIC
+import gatt_uuid
+from gatt_uuid import formatUUID
 from gi.repository import GLib
 
 
@@ -15,22 +16,33 @@ class BleAutomationIODigitalSingle:
     def on(self, value):
         return self.ble.write(value, self.index)
 
+
 class BleAutomationIODigital:
     def __init__(self, characteristic):
         self.characteristic = characteristic
-        self.gpios = [ BleAutomationIODigitalSingle(self, i) for i in range(0, len(self.read())) ]
+        self.gpios = [BleAutomationIODigitalSingle(self, i)
+                      for i in range(0, len(self.read()))]
+
+    @classmethod
+    def readwrite_param(Cls, offset):
+        if offset is None:
+            return {}
+        else:
+            return {"offset": GLib.Variant('q', offset)}
 
     def read(self, offset=None):
+        r = self.characteristic.ReadValue(self.readwrite_param(offset))
         if offset is not None:
-            return bool(self.characteristic.ReadValue({"offset": GLib.Variant('q', offset)})[0])
+            return bool(r[0])
         else:
-            return self.characteristic.ReadValue({})
+            return r
 
     def write(self, value, offset=None):
+        p = self.readwrite_param(offset)
         if offset is not None:
-            self.characteristic.WriteValue([int(value)], {"offset": GLib.Variant('q', offset)})
+            self.characteristic.WriteValue([int(value)], p)
         else:
-            self.characteristic.WriteValue(value, {})
+            self.characteristic.WriteValue(value, p)
 
 
 class BleClient:
@@ -40,7 +52,8 @@ class BleClient:
 
     @property
     def devices(self):
-        return { a: d for (a,d) in self.adapter.devices.items() if 'coiot' in d.proxy.Alias.lower() }
+        return {a: d for (a, d) in self.adapter.devices.items()
+                if 'coiot' in d.proxy.Alias.lower()}
 
     def get_services_by_uuid(self, uuid):
         uuid = formatUUID(uuid)
@@ -53,7 +66,8 @@ class BleClient:
         return r
 
     def get_characteristics_by_uuid(self, service_uuid, characteristic_uuid):
-        service_uuid, characteristic_uuid = formatUUID(service_uuid, characteristic_uuid)
+        service_uuid, characteristic_uuid = formatUUID(service_uuid,
+                                                       characteristic_uuid)
         r = {}
         for (a, s) in self.get_services_by_uuid(service_uuid).items():
             for u, c in s.characteristics.items():
@@ -64,7 +78,8 @@ class BleClient:
 
     def get_every_single_gpio(self):
         gpios = {}
-        cc = self.get_characteristics_by_uuid(UUID_SERVICE.AUTOMATION_IO, UUID_CHARACTERISTIC.DIGITAL)
+        cc = self.get_characteristics_by_uuid(gatt_uuid.AUTOMATION_IO,
+                                              gatt_uuid.DIGITAL)
         for n, c in cc.items():
             gpios[n] = BleAutomationIODigital(c).gpios
 

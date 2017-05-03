@@ -1,5 +1,6 @@
 import sqlite3
 
+
 class CoiotDBInterface:
     interfaces = set()
 
@@ -12,6 +13,7 @@ class CoiotDBInterface:
     def load_all(Cls, device):
         for Interface in Cls.interfaces:
             device.load_interface(Interface)
+
 
 @CoiotDBInterface.declare
 class Displayable:
@@ -46,7 +48,8 @@ class Displayable:
                 VALUES(?, ?)
                 """, (self.id, Name))
         if r.lastrowid is None:
-            raise Exception("Could not install the Displayable interface, have you specified a correct type ?")
+            raise Exception("Could not install the Displayable interface, "
+                            "have you specified a correct type ?")
         self.__id = r.lastrowid
 
     @property
@@ -92,6 +95,7 @@ class Displayable:
                     WHERE Name = ?)
                 WHERE ID = ?
                 """, (value, self.__id,))
+
 
 @CoiotDBInterface.declare
 class Switchable:
@@ -151,41 +155,52 @@ class Switchable:
             WHERE ID = ?
             """, (value, self.__id,))
 
+
+def Composite():
+    """
+    Kind of a magical class that can have interfaces installed on a
+    per-instance basis
+    """
+    class DefaultObject:
+        pass
+
+    class CompositeCls(DefaultObject):
+        def load_interface(self, Interface):
+            if Interface.load(self):
+                CompositeCls.__bases__ = (Interface,) + CompositeCls.__bases__
+
+        def install_interface(self, Interface, *args, **kwargs):
+            """
+            Set up support for the given interface in the database
+            """
+            Interface.install(self, *args, **kwargs)
+            CompositeCls.__bases__ = (Interface,) + CompositeCls.__bases__
+
+    return CompositeCls
+
+
 def CoiotDBDevice(*arg, **kw):
     """
-    A bit complicated as a wrapper: acts as a constructor for the CoiotDBDevice generic class.
-    This class checks for any interface the device supports when initialized and implements
-    the associated interfaces. Interfaces can also be added at runtime, they will then be
-    saved in the database.
+    A bit complicated as a wrapper: acts as a constructor for the CoiotDBDevice
+    generic class.
+    This class checks for any interface the device supports when initialized
+    and implements the associated interfaces. Interfaces can also be added at
+    runtime, they will then be saved in the database.
 
     New interfaces need at least two class methods: load() and install().
-    * load() sets up the given object from the database and returns True iif this was succesful (ie the
-    object implements the interface in database)
+    * load() sets up the given object from the database and returns True iif
+    this was succesful (ie the object implements the interface in database)
     * install() add database support for the given interface
     See Switchable definition of these functions for more details.
 
-    Any field implemented by the interface will be made available to the cache as a field to be get/set.
-    Fields starting with "Future" are understood as future version of given properties.
-    eg the field FutureFoo is the future of the property Foo
-    Regular attributes or properties can be used indiferently. COIoT expects to always be able to set or get
-    a field so if read-only or write-only properties are not supported (this is a database after all).
+    Any field implemented by the interface will be made available to the cache
+    as a field to be get/set.
+    Fields starting with "Future" are understood as future version of given
+    properties. eg the field FutureFoo is the future of the property Foo
+    Regular attributes or properties can be used indiferently. COIoT expects to
+    always be able to set or get a field so if read-only or write-only
+    properties are not supported (this is a database after all).
     """
-    def Composite():
-        class DefaultObject: pass
-        class CompositeCls(DefaultObject):
-            def load_interface(self, Interface):
-                if Interface.load(self):
-                    CompositeCls.__bases__ = (Interface,) + CompositeCls.__bases__
-
-            def install_interface(self, Interface, *args, **kwargs):
-                """
-                Set up support for the given interface in the database
-                """
-                Interface.install(self, *args, **kwargs)
-                CompositeCls.__bases__ = (Interface,) + CompositeCls.__bases__
-
-        return CompositeCls
-
     class CoiotDBDevice(Composite()):
         def __init__(self, db, did, pdid, Error=False):
             self.db = db
@@ -227,6 +242,7 @@ def CoiotDBDevice(*arg, **kw):
 
     return CoiotDBDevice(*arg, **kw)
 
+
 class CoiotDB:
     def __init__(self, filename):
         self.db = sqlite3.connect(filename)
@@ -240,13 +256,13 @@ class CoiotDB:
     def devices(self):
         d = []
         for did, pdid, Error in self.db.execute("""
-            SELECT DEVICE.ID, Parent, DEVICE_STATUS_LOG.Error
-            FROM DEVICE
-            JOIN DEVICE_STATUS_LOG
-            ON DEVICE_STATUS_LOG.Device = DEVICE.ID
-            GROUP BY DEVICE.ID
-            ORDER BY DEVICE_STATUS_LOG.ID DESC
-            """):
+                SELECT DEVICE.ID, Parent, DEVICE_STATUS_LOG.Error
+                FROM DEVICE
+                JOIN DEVICE_STATUS_LOG
+                ON DEVICE_STATUS_LOG.Device = DEVICE.ID
+                GROUP BY DEVICE.ID
+                ORDER BY DEVICE_STATUS_LOG.ID DESC
+                """):
             d.append(CoiotDBDevice(self.db, did, pdid, bool(Error)))
         return d
 

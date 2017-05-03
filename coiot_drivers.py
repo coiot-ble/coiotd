@@ -1,15 +1,16 @@
 import threading
 import coiot_db
 
+
 class DriverActionsList:
     class ActionList:
         def __init__(self, device, dal):
             self.device = device
             self.dal = dal
-        
+
         def __setitem__(self, k, v):
             with self.dal.cv:
-                self.dal.list[self.device, k] =  v
+                self.dal.list[self.device, k] = v
                 self.dal.cv.notify()
 
     def __init__(self):
@@ -28,6 +29,7 @@ class DriverActionsList:
             else:
                 # timeout
                 return None
+
 
 @coiot_db.CoiotDBInterface.declare
 class BLEDriverParameters:
@@ -53,9 +55,11 @@ class BLEDriverParameters:
             """, (self.id, Mac))
         self.__id = r.lastrowid
 
+
 class BluezBLEDevice:
     def __init__(self, db_device):
         self.db_device = db_device
+
 
 class BluezBLEDriver:
     class BluezThread(threading.Thread):

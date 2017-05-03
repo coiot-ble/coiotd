@@ -3,12 +3,13 @@
 import re
 from xml.etree import ElementTree
 
+
 class DBusNode:
     def __init__(self, bus, service, path=None):
         self.bus = bus
         self.service = service
         if path is None:
-            path = '/' + service.replace('.','/')
+            path = '/' + service.replace('.', '/')
         self.path = path
 
     @property
@@ -26,13 +27,16 @@ class DBusNode:
     def clear_cache(self):
         del self.__dict__['proxy']
 
-    def get_children(self, filt, Cls, key=lambda n,v: n):
+    def get_children(self, filt, Cls, key=lambda n, v: n):
         children = {}
-        for n in [e.attrib['name'] for e in ElementTree.fromstring(self.proxy.Introspect()) if e.tag == 'node']:
+        for n in [e.attrib['name']
+                  for e in ElementTree.fromstring(self.proxy.Introspect())
+                  if e.tag == 'node']:
             if re.match(filt, n):
                 v = Cls(self.bus, self.service, self.path+'/'+n)
-                children[key(n,v)] = v
+                children[key(n, v)] = v
         return children
 
     def __repr__(self):
-        return '{}({}, \'{}\', \'{}\')'.format(type(self).__name__, self.bus, self.service, self.path)
+        return '{}({}, \'{}\', \'{}\')'.format(type(self).__name__, self.bus,
+                                               self.service, self.path)

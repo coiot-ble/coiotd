@@ -1,7 +1,8 @@
 class CoiotDevice:
     """
-    This object acts in the intersection between the driver object (that actually
-    access the device), the DB object (acting as a cache) and the DBus object (API)
+    This object acts in the intersection between the driver object
+    (that actually accesses the device), the DB object (acting as a cache)
+    and the DBus object (API)
     """
     def __init__(self, db):
         self._db = db
@@ -28,4 +29,4 @@ class CoiotDevice:
 
     @classmethod
     def load(Cls, db):
-        return [ CoiotDevice(d) for d in db.devices ]
+        return [CoiotDevice(d) for d in db.devices]

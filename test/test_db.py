@@ -1,8 +1,9 @@
 import unittest
 from coiot_db import CoiotDB, Switchable, Displayable
 
+
 class CoiotDBTestSetup(unittest.TestCase):
-    def setUp(self, cleanup=True, filename = "/tmp/coiot.db"):
+    def setUp(self, cleanup=True, filename="/tmp/coiot.db"):
         if cleanup:
             import os
             try:
@@ -10,6 +11,7 @@ class CoiotDBTestSetup(unittest.TestCase):
             except FileNotFoundError:
                 pass
         self.db = CoiotDB(filename)
+
 
 class CoiotDBUnitTest(CoiotDBTestSetup):
     """
@@ -29,22 +31,23 @@ class CoiotDBUnitTest(CoiotDBTestSetup):
         self.assertEqual(0, len(self.db.devices))
 
     def test_install_no_parent(self):
-        d = self.db.install()
+        self.db.install()
         self.assertEqual(1, len(self.db.devices))
 
     def test_install_with_parent(self):
         parent = self.db.install()
-        device = self.db.install(parent)
+        self.db.install(parent)
         self.assertEqual(2, len(self.db.devices))
 
     def test_install_switchable_inheritance(self):
         device = self.db.install()
         d2 = self.db.install()
 
-        device.install_interface(Switchable, On = False)
+        device.install_interface(Switchable, On=False)
 
         self.assertTrue(isinstance(device, Switchable))
         self.assertTrue(not isinstance(d2, Switchable))
+
 
 class OneDeviceTestSetup(CoiotDBTestSetup):
     """
@@ -56,13 +59,14 @@ class OneDeviceTestSetup(CoiotDBTestSetup):
             self.device = self.db.install()
 
     def reload(self):
-        self.setUp(cleanup = False)
+        self.setUp(cleanup=False)
         self.device = self.db.devices[0]
 
     def test_reload(self):
-        self.setUp(cleanup = False)
+        self.setUp(cleanup=False)
         self.assertEqual(1, len(self.db.devices))
         self.device = self.db.devices[0]
+
 
 class DisplayableUnitTest(OneDeviceTestSetup):
     """
@@ -71,7 +75,8 @@ class DisplayableUnitTest(OneDeviceTestSetup):
     def setUp(self, cleanup=True, **kwargs):
         super().setUp(cleanup=cleanup, **kwargs)
         if cleanup:
-            self.device.install_interface(Displayable, Name = "Desk lamp", Type = "Lamp")
+            self.device.install_interface(Displayable,
+                                          Name="Desk lamp", Type="Lamp")
 
     def test_setup_install(self):
         self.assertTrue(isinstance(self.device, Displayable))
@@ -102,6 +107,7 @@ class DisplayableUnitTest(OneDeviceTestSetup):
         self.reload()
         self.assertEqual(None, d2.Type)
 
+
 class SwitchableUnitTest(OneDeviceTestSetup):
     """
     Test setup: a Switchable device in database.
@@ -109,7 +115,7 @@ class SwitchableUnitTest(OneDeviceTestSetup):
     def setUp(self, cleanup=True, **kwargs):
         super().setUp(cleanup=cleanup, **kwargs)
         if cleanup:
-            self.device.install_interface(Switchable, On = False)
+            self.device.install_interface(Switchable, On=False)
 
     def test_setup_install(self):
         self.assertTrue(isinstance(self.device, Switchable))
@@ -141,6 +147,7 @@ class SwitchableUnitTest(OneDeviceTestSetup):
         self.reload()
         self.assertEqual(self.device.FutureOn, True)
 
+
 class SwitchableAndDisplayableUnitTest(OneDeviceTestSetup):
     """
     Test setup: a device that is switchable and displayable
@@ -148,8 +155,10 @@ class SwitchableAndDisplayableUnitTest(OneDeviceTestSetup):
     def setUp(self, cleanup=True, **kwargs):
         super().setUp(cleanup=cleanup, **kwargs)
         if cleanup:
-            self.device.install_interface(Switchable, On = False)
-            self.device.install_interface(Displayable, Name = "Bed socket", Type = "Wall socket")
+            self.device.install_interface(Switchable, On=False)
+            self.device.install_interface(Displayable,
+                                          Name="Bed socket",
+                                          Type="Wall socket")
 
     def test_setup_install(self):
         self.assertTrue(isinstance(self.device, Switchable))

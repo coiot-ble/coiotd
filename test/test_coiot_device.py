@@ -5,6 +5,7 @@ import coiot_drivers
 import os
 import unittest
 
+
 class TestCoiotDevice(unittest.TestCase):
     def setUp(self):
         filename = "/tmp/coiot.db"
@@ -14,7 +15,7 @@ class TestCoiotDevice(unittest.TestCase):
             pass
         self.db = coiot_db.CoiotDB(filename)
         d = self.db.install()
-        d.install_interface(coiot_db.Displayable, Name = "Foo")
+        d.install_interface(coiot_db.Displayable, Name="Foo")
         self.ble = coiot_drivers.BluezBLEDriver()
         self.devices = coiot_device.CoiotDevice.load(self.db)
 
@@ -24,4 +25,3 @@ class TestCoiotDevice(unittest.TestCase):
     def test_setup(self):
         self.devices[0].Name = "Bar"
         self.assertEqual("Foo", self.devices[0].Name)
-
