@@ -1,0 +1,30 @@
+#! /usr/bin/sh
+
+cd $(dirname $0)
+
+run_script() {
+	step="$1"
+	script="$2"
+
+	echo -n "$step: "
+	out=$($script 2>&1)
+	r=$?
+
+	if [ $r -ne 0 ]; then
+		echo -e "\033[91mFailed\033[0m"
+		echo $out
+	else
+		echo -e "\033[32mOK\033[0m"
+	fi
+
+	return $r
+}
+
+tr=0
+
+run_script "unit tests" ./run_unit_tests
+tr=$(($tr | $?))
+run_script "syntax check" ./run_syntax_check
+tr=$(($tr | $?))
+
+exit $tr
