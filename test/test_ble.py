@@ -49,7 +49,7 @@ class StubDigitalAutomationIO(MockDBusGattService):
                     return [self.value[offset]]
                 else:
                     offset = None
-                    return [self.value]
+                    return self.value[:]
 
             def WriteValue(self, value, darg):
                 if 'offset' in darg:
@@ -65,6 +65,9 @@ class StubDigitalAutomationIO(MockDBusGattService):
 
 
 class TestBle(unittest.TestCase):
+    """
+    A single device, with a single digital io
+    """
     def setUp(self):
         self.adapter = MockBluezAdapter({
                 "00:01:02:03:04:05": {
@@ -78,11 +81,18 @@ class TestBle(unittest.TestCase):
     def test_setup(self):
         self.assertTrue(self.adapter.proxy.Powered)
         self.ble.connect()
-        self.assertEqual(1, len(self.ble.get_every_single_gpio()))
         self.assertTrue(self.device.proxy.connected)
 
 
 class TestDigital(TestBle):
+    """
+    A single device, with a single digital io
+    """
+    def test_gpio_count(self):
+        gpio = self.ble.get_every_single_gpio()
+        self.assertEqual(1, len(gpio))
+        self.assertEqual(1, len(gpio.popitem()[1]))
+
     def test_switch_on_off(self):
         gpios = self.ble.get_every_single_gpio()
         self.assertEqual(len(gpios['00:01:02:03:04:05']), 1)
@@ -90,3 +100,34 @@ class TestDigital(TestBle):
         self.assertEqual(self.digital_service.digital.value, [True])
         gpios['00:01:02:03:04:05'][0].on = False
         self.assertEqual(self.digital_service.digital.value, [False])
+
+
+class TestMultipleDigital(unittest.TestCase):
+    """
+    A single device, with multiple digital io
+    """
+    def setUp(self):
+        self.adapter = MockBluezAdapter({
+                "00:01:02:03:04:05": {
+                    gatt_uuid.AUTOMATION_IO: StubDigitalAutomationIO(2)
+                }
+            })
+        self.device = self.adapter.devices["00:01:02:03:04:05"]
+        self.digital_service = self.device.services[gatt_uuid.AUTOMATION_IO]
+        self.ble = ble.BleClient(self.adapter)
+        self.gpio = self.ble.get_every_single_gpio()
+
+    def test_gpio_count(self):
+        self.assertEqual(1, len(self.gpio))
+        self.assertEqual(2, len(self.gpio.popitem()[1]))
+
+    def test_value(self):
+        gpio = self.gpio["00:01:02:03:04:05"]
+        gpio[0].on = True
+        self.assertEqual(self.digital_service.digital.value, [True, False])
+        gpio[1].on = True
+        self.assertEqual(self.digital_service.digital.value, [True, True])
+        gpio[0].on = False
+        self.assertEqual(self.digital_service.digital.value, [False, True])
+        gpio[1].on = False
+        self.assertEqual(self.digital_service.digital.value, [False, False])
