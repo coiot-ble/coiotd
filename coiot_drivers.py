@@ -16,7 +16,7 @@ class DriverActionsList:
         self.list = {}
         self.cv = threading.Condition()
 
-    def add(self, device):
+    def new(self, device):
         return type(self).ActionList(device, self)
 
     def pop(self, timeout=0.5):
@@ -80,7 +80,7 @@ class BluezBLEDriver:
         self.thread.start()
 
     def connect(self, device):
-        device.action_list = self.action_list.add(device)
+        device.add_action_list(self.action_list)
 
     def set(self, device, k, v):
         print(type(self).__name__, device, k, "<=", v)

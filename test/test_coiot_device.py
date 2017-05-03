@@ -8,15 +8,19 @@ import unittest
 class TestCoiotDevice(unittest.TestCase):
     def setup(self):
         filename = "/tmp/coiot.db"
-        os.remove(filename)
+        try:
+            os.remove(filename)
+        except FileNotFoundError:
+            pass
         self.db = coiot_db.CoiotDB(filename)
-        d = self.db.install("BLE")
+        d = self.db.install()
         d.install_interface(coiot_db.Displayable, Name = "Foo")
         self.ble = coiot_drivers.BluezBLEDriver()
-        self.devices = coiot_device.load_coiot_devices(self.db, {"BLE": self.ble}) 
+        self.devices = coiot_device.CoiotDevice.load(self.db)
 
     def test_setup(self):
         self.setup()
+
         self.devices[0].Name = "Bar"
         self.assertEqual("Foo", self.devices[0].Name)
 
