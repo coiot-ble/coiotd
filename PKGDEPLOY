@@ -1,4 +1,9 @@
 #!/usr/bin/sh
+
+pkg_test() {
+	sh -e run_unit_tests
+}
+
 pkg_target_post_unpack() {
 	ln -nsf $pkg_target_dest/service/org.coiot.service /usr/share/dbus-1/system-services/
 	ln -nsf $pkg_target_dest/service/dbus-org.coiot.service /etc/systemd/system/
