@@ -1,4 +1,4 @@
-import bluez
+from gatt_uuid import formatUUID, UUID_SERVICE, UUID_CHARACTERISTIC
 from gi.repository import GLib
 
 
@@ -33,19 +33,9 @@ class BleAutomationIODigital:
             self.characteristic.WriteValue(value, {})
 
 
-def formatUUID(*uuids):
-    uuid_r = []
-    for uuid in uuids:
-        if type(uuid) is int:
-            uuid_r.append('{:08x}-0000-1000-8000-00805f9b34fb'.format(uuid))
-        else:
-            uuid_r.append(uuid)
-    return tuple(uuid_r) if len(uuid_r) > 1 else uuid_r[0]
-
-
 class BleClient:
-    def __init__(self, adapter='hci0'):
-        self.adapter = bluez.DBusBluez().adapters[adapter]
+    def __init__(self, adapter):
+        self.adapter = adapter
         self.adapter.proxy.Powered = True
 
     @property
@@ -74,7 +64,7 @@ class BleClient:
 
     def get_every_single_gpio(self):
         gpios = {}
-        cc = self.get_characteristics_by_uuid(0x1815, 0x2a56)
+        cc = self.get_characteristics_by_uuid(UUID_SERVICE.AUTOMATION_IO, UUID_CHARACTERISTIC.DIGITAL)
         for n, c in cc.items():
             gpios[n] = BleAutomationIODigital(c).gpios
 
