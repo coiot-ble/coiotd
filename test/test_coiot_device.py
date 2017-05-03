@@ -6,7 +6,7 @@ import os
 import unittest
 
 class TestCoiotDevice(unittest.TestCase):
-    def setup(self):
+    def setUp(self):
         filename = "/tmp/coiot.db"
         try:
             os.remove(filename)
@@ -18,10 +18,10 @@ class TestCoiotDevice(unittest.TestCase):
         self.ble = coiot_drivers.BluezBLEDriver()
         self.devices = coiot_device.CoiotDevice.load(self.db)
 
-    def test_setup(self):
-        self.setup()
+    def tearDown(self):
+        self.ble.thread.stop()
 
+    def test_setup(self):
         self.devices[0].Name = "Bar"
         self.assertEqual("Foo", self.devices[0].Name)
 
-        self.ble.thread.stop()
