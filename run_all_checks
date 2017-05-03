@@ -5,14 +5,15 @@ cd $(dirname $0)
 run_script() {
 	step="$1"
 	script="$2"
+	outf=/tmp/coiotd_checks
 
 	echo -n "$step: "
-	out=$($script 2>&1)
+	$script >$outf 2>&1
 	r=$?
 
 	if [ $r -ne 0 ]; then
 		echo -e "\033[91mFailed\033[0m"
-		echo $out
+		cat $outf
 	else
 		echo -e "\033[32mOK\033[0m"
 	fi
