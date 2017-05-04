@@ -1,5 +1,6 @@
 import gatt_uuid
 from gatt_uuid import formatUUID
+import threading
 
 
 class MockBluezAdapter:
@@ -34,12 +35,34 @@ class MockDBusGattService:
                                 for (k, v) in characteristics.items()}
 
 
+class Guard:
+    def __init__(self):
+        self.mutex = threading.Lock()
+
+    def acquire(self):
+        self.mutex.acquire()
+
+    def release(self):
+        self.mutex.release()
+
+    @classmethod
+    def self_guarded(Cls, fn):
+        def self_guarded_(self, *args, **kwargs):
+            self.acquire()
+            res = fn(self, *args, **kwargs)
+            self.release()
+            return res
+        return self_guarded_
+
+
 class StubDigitalAutomationIO(MockDBusGattService):
     def __init__(self, inputs=1):
-        class StubDigital:
+        class StubDigital(Guard):
             def __init__(self, inputs):
+                super().__init__()
                 self.value = [False] * inputs
 
+            @Guard.self_guarded
             def ReadValue(self, darg):
                 if 'offset' in darg:
                     assert(darg['offset'].is_signature('q'))
@@ -49,6 +72,7 @@ class StubDigitalAutomationIO(MockDBusGattService):
                     offset = None
                     return self.value[:]
 
+            @Guard.self_guarded
             def WriteValue(self, value, darg):
                 if 'offset' in darg:
                     assert(darg['offset'].is_signature('q'))

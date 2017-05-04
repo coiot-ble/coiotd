@@ -121,6 +121,10 @@ class Switchable:
             """, (self.id, On,))
         self.__id = r.lastrowid
         self.On = On
+        self.db.execute("""
+            INSERT INTO SWITCHABLE_LOG(Switchable, Value)
+            VALUES(?, ?);
+            """, (self.__id, On,))
 
     @property
     def On(self):

@@ -1,34 +1,8 @@
+from action_list import DeviceActionList
 import threading
 import coiot_db
-
-
-class DriverActionsList:
-    class ActionList:
-        def __init__(self, device, dal):
-            self.device = device
-            self.dal = dal
-
-        def __setitem__(self, k, v):
-            with self.dal.cv:
-                self.dal.list[self.device, k] = v
-                self.dal.cv.notify()
-
-    def __init__(self):
-        self.list = {}
-        self.cv = threading.Condition()
-
-    def new(self, device):
-        return type(self).ActionList(device, self)
-
-    def pop(self, timeout=0.5):
-        with self.cv:
-            self.cv.wait_for(lambda: self.list, timeout)
-            if self.list:
-                t, v = self.list.popitem()
-                return (*t, v)
-            else:
-                # timeout
-                return None
+import ble
+import gatt_uuid
 
 
 @coiot_db.CoiotDBInterface.declare
@@ -42,9 +16,7 @@ class BLEDriverParameters:
             """, (self.id,)).fetchone()
         if r is None:
             return False
-
         self.__id, self.mac = r
-        self.driver = BluezBLEDevice(self)
         return True
 
     @classmethod
@@ -54,11 +26,11 @@ class BLEDriverParameters:
             VALUES(?, ?)
             """, (self.id, Mac))
         self.__id = r.lastrowid
+        self.mac = Mac
 
-
-class BluezBLEDevice:
-    def __init__(self, db_device):
-        self.db_device = db_device
+    @property
+    def driver(self):
+        return BluezBLEDriver.instance
 
 
 class BluezBLEDriver:
@@ -78,13 +50,23 @@ class BluezBLEDriver:
                     d, k, v = t
                     self.driver.set(d, k, v)
 
-    def __init__(self):
+    def __init__(self, ble):
+        self.ble = ble
         self.thread = BluezBLEDriver.BluezThread(self)
-        self.action_list = DriverActionsList()
+        self.action_list = DeviceActionList()
+        type(self).instance = self
         self.thread.start()
 
+    instance = None
+
     def connect(self, device):
-        device.add_action_list(self.action_list)
+        device.add_action_list(self.action_list.new(device))
 
     def set(self, device, k, v):
-        print(type(self).__name__, device, k, "<=", v)
+        if self.ble is not None:
+            ble_dev = self.ble.devices[device.mac]
+            if k == "On":
+                sv = ble_dev.services[gatt_uuid.AUTOMATION_IO]
+                char = sv.characteristics[gatt_uuid.DIGITAL]
+                ble.BleAutomationIODigital(char).gpios[0].on = v
+        device.queue_update(k, v)
