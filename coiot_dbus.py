@@ -87,9 +87,9 @@ class CoiotDBusDeviceInterface:
 class CoiotDBus:
     def __init__(self, bus, client):
         self.client = client
-        default_pub = ('/org/coiot', self,
+        root_interface = ('/org/coiot', self,
                        "<node>{}</node>".format(INTROSPECTABLE_DBUS))
-        self.publication = self.bus.publish('org.coiot', default_pub)
+        self.publication = self.bus.publish('org.coiot', root_interface)
         self.register_devices()
 
     def register_devices(self):
