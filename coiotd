@@ -3,77 +3,8 @@
 from gi.repository import GLib
 from ble import client
 import time
-import pydbus
+import coiot_dbus
 
-COIOT_DISPLAYABLE1_DBUS="""
-<interface name="org.coiot.Displayable1">
-    <property name="Name" type="s" access="readwrite" />
-    <property name="Type" type="s" access="readwrite" />
-</interface>
-"""
-COIOT_SWITCHABLE1_DBUS="""
-<interface name="org.coiot.Switchable1">
-    <property name="On" type="b" access="readwrite" />
-</interface>
-"""
-
-class CoiotDevice:
-    """
-    Generic class to use in order to declare a COIoT device.
-    Instances of that class act as a dictionnary to give access to
-    COIoT specific attributes. This allows for properties to be
-    discovered at runtime through a generic mechanism.
-    """
-
-    def __init__(self, *interfaces):
-        self.interfaces = interfaces
-
-    def keys(self):
-        return []
-
-    def items(self):
-        return { n: getattr(self, n) for n in self.keys() }.items()
-
-    def __setitem__(self, key, value):
-        if not key in self.keys():
-            raise KeyError()
-        setattr(self, key, value)
-
-    def __getitem__(self, key):
-        if not key in self.keys():
-            raise KeyError()
-        getattr(self, key)
-
-    def __iter__(self):
-        return iter(self.keys())
-
-class CoiotDisplayableDevice(CoiotDevice):
-    def __init__(self, *interfaces):
-        super().__init__(COIOT_DISPLAYABLE1_DBUS, *interfaces)
-
-    def keys(self):
-        return ["Name", "Type"].extend(super().keys())
-
-    @property
-    def Name(self):
-        return type(self).__name__
-
-class CoiotLamp(CoiotDisplayableDevice):
-    def __init__(self, device):
-        super().__init__(COIOT_SWITCHABLE1_DBUS)
-        self.Type = "Lamp"
-        self.device = device
-
-    def keys(self):
-        return ["On"].extend(super().keys())
-
-    @property
-    def On(self):
-        return self.device.on
-
-    @On.setter
-    def On(self, value):
-        self.device.on = value
 
 class CoiotBle:
     def __init__(self):
@@ -87,28 +18,9 @@ class CoiotBle:
                 n = name + "-" + str(i)
                 d = CoiotLamp(g)
                 self.devices[n] = d
-
-class CoiotDBusDevice:
-    def __init__(self, device, path):
-        self.device = device
-        self.path = "/org/coiot/" + path
-        self.dbus = '<node>{}</node>'.format("".join(device.interfaces))
-
-    def register_on_coiot_bus(self, coiot):
-        coiot.publication._at_exit(coiot.bus.register_object(self.path, self.device, self.dbus).__exit__)
-
-class CoiotDBus:
-    def __init__(self):
-        self.client = client.CoiotBle()
-        self.bus = pydbus.SystemBus()
-        self.publication = self.bus.publish('org.coiot', ('/org/coiot', self, '<node><interface name="org.freedesktop.Introspectable"></interface></node>'))
-        self.register_devices()
-
-    def register_devices(self):
-        for i, d in enumerate(self.client.devices.values()):
-            CoiotDBusDevice(d, "{}".format(i)).register_on_coiot_bus(self)
+                
 
 if __name__ == "__main__":
-    coiot = CoiotDBus()
+    coiot = coiot_dbus.CoiotDBus(CoiotBle())
     loop = GLib.MainLoop()
     loop.run()
