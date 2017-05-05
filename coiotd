@@ -4,6 +4,8 @@ from gi.repository import GLib
 from ble import client
 import time
 import coiot_dbus
+import bluez
+import pydbus
 
 
 class CoiotBle:
@@ -16,11 +18,11 @@ class CoiotBle:
         for name, gpio in gpios.items():
             for i, g in enumerate(gpio):
                 n = name + "-" + str(i)
-                d = CoiotLamp(g)
+                d = coiot_dbus.CoiotLamp(g)
                 self.devices[n] = d
-                
+
 
 if __name__ == "__main__":
-    coiot = coiot_dbus.CoiotDBus(CoiotBle())
+    coiot = coiot_dbus.CoiotDBus(pydbus.SystemBus(), CoiotBle())
     loop = GLib.MainLoop()
     loop.run()

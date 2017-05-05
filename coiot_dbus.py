@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-import pydbus
 
 COIOT_DISPLAYABLE1_DBUS = """
 <interface name="org.coiot.Displayable1">
@@ -86,9 +85,8 @@ class CoiotDBusDeviceInterface:
 
 
 class CoiotDBus:
-    def __init__(self, client):
+    def __init__(self, bus, client):
         self.client = client
-        self.bus = pydbus.SystemBus()
         default_pub = ('/org/coiot', self,
                        "<node>{}</node>".format(INTROSPECTABLE_DBUS))
         self.publication = self.bus.publish('org.coiot', default_pub)
