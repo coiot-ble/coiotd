@@ -1,0 +1,13 @@
+<!DOCTYPE node PUBLIC
+"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd" >
+<node xmlns:doc="http://www.freedesktop.org/dbus/1.0/doc.dtd">
+	<interface name="org.coiot.Reachable1">
+		<property name="On" type="b" access="readwrite" />
+		<method name="SwitchableLog">
+			<arg name="from" type="t"/>
+			<arg name="to" type="t"/>
+			<arg name="switch" type="a{tb}"/>
+		</method>
+	</interface>
+</node>

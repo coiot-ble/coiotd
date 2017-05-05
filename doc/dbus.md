@@ -2,6 +2,8 @@
 
 The bus `org.coiot` is used by the coiotd to allow manipulation of the COIoT devices.
 
+See files in `dbus-1/interfaces/` for the "real" specification of the interfaces.
+
 # Object hierarchy
 
 The bus exposes a hierarchy of objects, starting from `/org/coiot`, the objects have a unique name
@@ -39,6 +41,10 @@ A temperature and humidity sensor for a potted plant, to be displayed together:
                 /1 -> .Sensor1(unit=H2O ppm, exponent=4)
                 /2 -> .Sensor1(unit=degrees C, exponent=-1)
 ```
+
+## COIoT data types
+
+- Dates are 64 bits unsigned (t) representing a time in millisecond in UTC since the epoch
 
 # org.coiot.Reachable1
 
@@ -85,11 +91,11 @@ This interface must have one of the following types:
 # org.coiot.Sensor1
 A device with sensing capability
 
-- **Value**: raw sensor value
-- **Exponent**: an exponent of 10, 3 being 10^3=kilos
+- **Value**: converted sensor value
+- **Exponent**: an exponent of 10, 3 being 10^3=kilos. Changing exponent impacts both Value and SensorLog()
 - **Unit**
 - **MeasureDate**
-- **SensorLog(from, to)** returns a list of tuples `(date, value)` measured between the two dates, with `from`, `to` and `date` as UTC timestamps
+- **SensorLog(from, to)** returns a list of tuples `(date, value)` measured between the two dates
 
 The units can be the following:
 - degree C

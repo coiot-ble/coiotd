@@ -1,0 +1,16 @@
+<!DOCTYPE node PUBLIC
+"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd" >
+<node xmlns:doc="http://www.freedesktop.org/dbus/1.0/doc.dtd">
+	<interface name="org.coiot.Reachable1">
+		<property name="Value" type="x" access="read" />
+		<property name="Exponent" type="i" access="readwrite" />
+		<property name="Unit" type="s" access="read" />
+		<property name="MeasureDate" type="t" access="read" />
+		<method name="SensorLog">
+			<arg name="from" type="t" />
+			<arg name="to" type="t" />
+			<arg name="measures" type="a{tx}" direction="out" />
+		</method>
+	</interface>
+</node>
