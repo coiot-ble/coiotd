@@ -1,7 +1,7 @@
 #!/usr/bin/sh
 
 pkg_test() {
-	sh -e run_unit_tests
+	sh -e scripts/check_all
 }
 
 pkg_target_post_unpack() {
