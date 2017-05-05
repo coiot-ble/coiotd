@@ -1,7 +1,8 @@
 #! /usr/bin/env python
-from coiot_dbus import DBusDevice, CoiotDBus, COIOT_DISPLAYABLE1_DBUS
+from coiot_dbus import DBusDevice, CoiotDBus
 import unittest
 from unittest.mock import Mock
+from xml.etree import ElementTree
 
 
 class CoiotDBusBasicTest(unittest.TestCase):
@@ -24,7 +25,7 @@ class CoiotDBusBasicTest(unittest.TestCase):
         self.device.Type = "Bar"
 
         self.coiot_bus = CoiotDBus(self.bus)
-        self.dbus_device = DBusDevice(self.device, COIOT_DISPLAYABLE1_DBUS)
+        self.dbus_device = DBusDevice(self.device)
 
     def test_setup(self):
         self.bus.publish.assert_called_once()
@@ -34,3 +35,16 @@ class CoiotDBusBasicTest(unittest.TestCase):
         register_args = self.bus.register_object.call_args[0]
         self.assertEqual(self.dbus_device, register_args[0])
         self.assertEqual('/org/coiot/1', register_args[1])
+        # interface inference
+        et = ElementTree.fromstring(register_args[2])
+        self.assertTrue(any((e.tag == "interface"
+                             and e.attrib['name'] == "org.coiot.Displayable1"
+                             for e in et)))
+
+    def test_get(self):
+        self.assertEqual(self.device.Name, self.dbus_device.Name)
+        self.assertEqual(self.device.Type, self.dbus_device.Type)
+
+    def test_set(self):
+        self.dbus_device.Name = "Foo"
+        self.assertEqual("Foo", self.device.Name)
