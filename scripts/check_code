@@ -1,0 +1,14 @@
+#! /usr/bin/sh
+
+cd $(git rev-parse --show-toplevel)/scripts
+
+source ./generic_check.sh
+
+tr=0
+
+run_check_script "unit tests" ./check_unit_test
+tr=$(($tr | $?))
+run_check_script "syntax check" ./check_syntax
+tr=$(($tr | $?))
+
+exit $tr

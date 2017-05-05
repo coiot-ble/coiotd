@@ -1,0 +1,12 @@
+#! /usr/bin/sh
+
+cd $(dirname $0)
+
+source ./generic_check.sh
+
+tr=0
+run_check_pipe "git diff" <<< "git diff --color=always --exit-code"
+tr=$(($tr | $?))
+run_check_pipe "git cached diff" <<< "git diff --color=always --cached --exit-code"
+tr=$(($tr | $?))
+exit $tr

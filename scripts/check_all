@@ -1,0 +1,9 @@
+#! /usr/bin/sh
+cd $(git rev-parse --show-toplevel)/scripts
+
+tr=0
+./check_git
+tr=$(($tr | $?))
+./check_code
+tr=$(($tr | $?))
+exit $tr
