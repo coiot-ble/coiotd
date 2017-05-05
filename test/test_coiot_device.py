@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 from coiot_device import CoiotDevice
 import coiot_db
-import coiot_drivers
+from ble import driver
 import os
 import unittest
 
@@ -16,9 +16,9 @@ class TestCoiotDevice(unittest.TestCase):
         self.db = coiot_db.CoiotDB(filename)
         d = self.db.install()
         d.install_interface(coiot_db.Displayable, Name="Foo")
-        d.install_interface(coiot_drivers.BLEDriverParameters,
+        d.install_interface(driver.BLEDriverParameters,
                             Mac="00:01:02:03:04:05")
-        self.ble = coiot_drivers.BluezBLEDriver(None)
+        self.ble = driver.BluezBLEDriver(None)
         self.updates = []
         self.devices = CoiotDevice.load(self.db,
                                         lambda d: self.updates.append(d))

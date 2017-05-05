@@ -1,5 +1,5 @@
-import gatt_uuid
-from gatt_uuid import formatUUID
+from . import gatt_uuid
+from .gatt_uuid import formatUUID
 from gi.repository import GLib
 import logging
 

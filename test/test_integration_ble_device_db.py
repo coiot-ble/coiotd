@@ -1,10 +1,8 @@
 import time
 import unittest
-import ble
 from coiot_device import CoiotDevice
-import coiot_drivers
+from ble import client, driver, gatt_uuid
 import coiot_db
-import gatt_uuid
 from test.mock_ble import MockBluezAdapter, StubDigitalAutomationIO
 import logging
 import sys
@@ -29,7 +27,7 @@ class TestIntegrationBLEDeviceDBSwitchable(unittest.TestCase):
         self.db = coiot_db.CoiotDB(db_filename)
         self.db_device = self.db.install()
         self.db_device.install_interface(coiot_db.Switchable, On=False)
-        self.db_device.install_interface(coiot_drivers.BLEDriverParameters,
+        self.db_device.install_interface(driver.BLEDriverParameters,
                                          Mac="00:01:02:03:04:05")
 
         # ble
@@ -40,16 +38,16 @@ class TestIntegrationBLEDeviceDBSwitchable(unittest.TestCase):
             })
         self.ble_device = self.adapter.devices["00:01:02:03:04:05"]
         self.ble_service = self.ble_device.services[gatt_uuid.AUTOMATION_IO]
-        self.ble = ble.BleClient(self.adapter)
+        self.client = client.BleClient(self.adapter)
 
-        self.ble_driver = coiot_drivers.BluezBLEDriver(self.ble)
+        self.driver = driver.BluezBLEDriver(self.client)
 
         # devices
         self.updates = set()
         self.devices = CoiotDevice.load(self.db, lambda d: self.updates.add(d))
 
     def tearDown(self):
-        self.ble_driver.thread.stop()
+        self.driver.thread.stop()
 
     def test_setup(self):
         self.assertEqual(1, len(self.devices))

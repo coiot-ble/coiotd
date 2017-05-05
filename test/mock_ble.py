@@ -1,5 +1,5 @@
-import gatt_uuid
-from gatt_uuid import formatUUID
+from ble import gatt_uuid
+from ble.gatt_uuid import formatUUID
 import threading
 
 

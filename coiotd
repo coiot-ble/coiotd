@@ -1,8 +1,7 @@
 #! /usr/bin/env python
 
 from gi.repository import GLib
-import ble
-import bluez
+from ble import client
 import time
 import pydbus
 
@@ -78,11 +77,11 @@ class CoiotLamp(CoiotDisplayableDevice):
 
 class CoiotBle:
     def __init__(self):
-        self.ble = ble.BleClient(bluez.DBusBluez().adapters['hci0'])
+        self.client = client.BleClient(bluez.DBusBluez().adapters['hci0'])
         time.sleep(2)
-        self.ble.connect()
+        self.client.connect()
         self.devices = {}
-        gpios = self.ble.get_every_single_gpio()
+        gpios = self.client.get_every_single_gpio()
         for name, gpio in gpios.items():
             for i, g in enumerate(gpio):
                 n = name + "-" + str(i)
@@ -100,13 +99,13 @@ class CoiotDBusDevice:
 
 class CoiotDBus:
     def __init__(self):
-        self.ble = CoiotBle()
+        self.client = client.CoiotBle()
         self.bus = pydbus.SystemBus()
         self.publication = self.bus.publish('org.coiot', ('/org/coiot', self, '<node><interface name="org.freedesktop.Introspectable"></interface></node>'))
         self.register_devices()
 
     def register_devices(self):
-        for i, d in enumerate(self.ble.devices.values()):
+        for i, d in enumerate(self.client.devices.values()):
             CoiotDBusDevice(d, "{}".format(i)).register_on_coiot_bus(self)
 
 if __name__ == "__main__":
