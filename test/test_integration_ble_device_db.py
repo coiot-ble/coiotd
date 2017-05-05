@@ -17,9 +17,6 @@ def activate_log(*names):
         log.addHandler(logging.StreamHandler(sys.stdout))
 
 
-activate_log('BLE', 'DB', 'Device')
-
-
 class TestIntegrationBLEDeviceDBSwitchable(unittest.TestCase):
     def setUp(self, cleanup=True, db_filename="/tmp/coiot.db"):
         # database

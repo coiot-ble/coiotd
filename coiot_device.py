@@ -51,4 +51,4 @@ class CoiotDevice:
 
     def __str__(self):
         return "{}({}, driver={})".format(type(self).__name__, self._db,
-                                   self._db.driver)
+                                          self._db.driver)
