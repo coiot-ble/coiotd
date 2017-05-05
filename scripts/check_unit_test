@@ -1,4 +1,4 @@
 #!/usr/bin/sh
+cd "$(dirname $(readlink -f $0))/.."
 
-cd $(git rev-parse --show-toplevel)
 python -m unittest

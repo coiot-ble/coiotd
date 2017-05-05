@@ -1,6 +1,5 @@
 #! /usr/bin/sh
-
-cd $(git rev-parse --show-toplevel)/scripts
+cd "$(dirname $(readlink -f $0))"
 
 source ./generic_check.sh
 
