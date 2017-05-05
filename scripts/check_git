@@ -4,9 +4,15 @@ cd "$(dirname "$(readlink -f "$0")")" || exit 2
 source ./generic_check.sh
 
 tr=0
+# shellcheck disable=SC2016
+# piping to shell leads to erroneous "single quote prevents expansion" message
+echo 'out=$(git status --porcelain); echo $out; if [ "$out" != "" ]; then exit 1; fi' | run_check_pipe "git status"
+tr=$((tr | $?))
+
 echo "git diff --color=always --exit-code" | run_check_pipe "git diff"
 tr=$((tr | $?))
 
 echo "git diff --color=always --cached --exit-code" | run_check_pipe "git cached diff"
 tr=$((tr | $?))
+
 exit $tr
