@@ -1,3 +1,5 @@
+#! /usr/bin/bash
+
 run_check_pipe() {
 	step="$1"
 	outf=/tmp/coiotd_checks
@@ -17,5 +19,5 @@ run_check_pipe() {
 }
 
 run_check_script() {
-	cat "$2" | run_check_pipe "$1"
+	run_check_pipe "$1" < "$2"
 }

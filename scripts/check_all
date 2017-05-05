@@ -1,9 +1,9 @@
-#! /usr/bin/sh
-cd "$(dirname $(readlink -f $0))"
+#! /usr/bin/bash
+cd "$(dirname "$(readlink -f "$0")")" || exit 2
 
 tr=0
 ./check_git
-tr=$(($tr | $?))
+tr=$((tr | $?))
 ./check_code
-tr=$(($tr | $?))
+tr=$((tr | $?))
 exit $tr

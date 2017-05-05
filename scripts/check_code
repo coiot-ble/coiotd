@@ -1,13 +1,15 @@
-#! /usr/bin/sh
-cd "$(dirname $(readlink -f $0))"
+#! /usr/bin/bash
+cd "$(dirname "$(readlink -f "$0")")" || exit 2
 
 source ./generic_check.sh
 
 tr=0
 
 run_check_script "unit tests" ./check_unit_test
-tr=$(($tr | $?))
-run_check_script "syntax check" ./check_syntax
-tr=$(($tr | $?))
+tr=$((tr | $?))
+run_check_script "syntax" ./check_syntax
+tr=$((tr | $?))
+run_check_script "scripts syntax" ./check_scripts_syntax
+tr=$((tr | $?))
 
 exit $tr
