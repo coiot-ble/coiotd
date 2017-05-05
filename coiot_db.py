@@ -1,4 +1,7 @@
 import sqlite3
+import logging
+
+log = logging.getLogger('DB')
 
 
 class CoiotDBInterface:
@@ -7,12 +10,14 @@ class CoiotDBInterface:
     @classmethod
     def declare(Cls, Interface):
         Cls.interfaces.add(Interface)
+        log.info('declare {}'.format(Interface))
         return Interface
 
     @classmethod
     def load_all(Cls, device):
         for Interface in Cls.interfaces:
             device.load_interface(Interface)
+        log.info('load {}'.format(device))
 
 
 @CoiotDBInterface.declare
@@ -165,20 +170,27 @@ def Composite():
     Kind of a magical class that can have interfaces installed on a
     per-instance basis
     """
+
+    def add_interface(Interface):
+        CompositeCls.__bases__ = (Interface,) + CompositeCls.__bases__
+        CompositeCls.__name__ = ", ".join([b.__name__
+                                           for b in CompositeCls.__bases__
+                                           if b is not DefaultObject])
+
     class DefaultObject:
         pass
 
     class CompositeCls(DefaultObject):
         def load_interface(self, Interface):
             if Interface.load(self):
-                CompositeCls.__bases__ = (Interface,) + CompositeCls.__bases__
+                add_interface(Interface)
 
         def install_interface(self, Interface, *args, **kwargs):
             """
             Set up support for the given interface in the database
             """
             Interface.install(self, *args, **kwargs)
-            CompositeCls.__bases__ = (Interface,) + CompositeCls.__bases__
+            add_interface(Interface)
 
     return CompositeCls
 
@@ -243,6 +255,10 @@ def CoiotDBDevice(*arg, **kw):
             if self.error != v:
                 self.error = v
                 self.log_status()
+
+        def __str__(self):
+            return "{}<{}>".format(type(self).__name__,
+                                   self.__class__.__bases__[0].__name__)
 
     return CoiotDBDevice(*arg, **kw)
 

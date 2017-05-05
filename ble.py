@@ -1,6 +1,9 @@
 import gatt_uuid
 from gatt_uuid import formatUUID
 from gi.repository import GLib
+import logging
+
+log = logging.getLogger('BLE')
 
 
 class BleAutomationIODigitalSingle:
@@ -47,6 +50,7 @@ class BleAutomationIODigital:
 
 class BleClient:
     def __init__(self, adapter):
+        log.info("new BleClient with adapter {}".format(adapter))
         self.adapter = adapter
         self.adapter.proxy.Powered = True
 
@@ -87,4 +91,5 @@ class BleClient:
 
     def connect(self):
         for d in self.devices.values():
+            log.info("connect to {}".format(d))
             d.proxy.Connect()

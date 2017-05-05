@@ -6,6 +6,18 @@ import coiot_drivers
 import coiot_db
 import gatt_uuid
 from test.mock_ble import MockBluezAdapter, StubDigitalAutomationIO
+import logging
+import sys
+
+
+def activate_log(*names):
+    for name in names:
+        log = logging.getLogger(name)
+        log.level = logging.DEBUG
+        log.addHandler(logging.StreamHandler(sys.stdout))
+
+
+activate_log('BLE', 'DB', 'Device')
 
 
 class TestIntegrationBLEDeviceDBSwitchable(unittest.TestCase):

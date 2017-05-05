@@ -12,6 +12,9 @@ class MockBluezAdapter:
                 self.Powered = False
         self.proxy = MockBluezAdapterProxy()
 
+    def __str__(self):
+        return type(self).__name__
+
 
 class MockDBusDevice:
     def __init__(self, services):
@@ -27,6 +30,9 @@ class MockDBusDevice:
                 self.connected = True
 
         self.proxy = MockDBusDeviceProxy()
+
+    def __str__(self):
+        return type(self).__name__
 
 
 class MockDBusGattService:
