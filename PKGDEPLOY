@@ -1,12 +1,14 @@
 #!/usr/bin/sh
+# shellcheck disable=SC2154
+# some variables are set in deploypkg tool
 
 pkg_test() {
 	sh -e scripts/check_all
 }
 
 pkg_target_post_unpack() {
-	ln -nsf $pkg_target_dest/service/org.coiot.service /usr/share/dbus-1/system-services/
-	ln -nsf $pkg_target_dest/service/dbus-org.coiot.service /etc/systemd/system/
+	ln -nsf "$pkg_target_dest/service/org.coiot.service /usr/share/dbus-1/system-services/"
+	ln -nsf "$pkg_target_dest/service/dbus-org.coiot.service /etc/systemd/system/"
 	
-	ln -nsf $pkg_target_dest/service/org.coiot.conf /usr/share/dbus-1/system.d/
+	ln -nsf "$pkg_target_dest/service/org.coiot.conf /usr/share/dbus-1/system.d/"
 }
