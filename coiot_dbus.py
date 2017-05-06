@@ -45,10 +45,9 @@ def CoiotDBusInterface(xml):
             self.et = et
 
         @property
-        def properties(self):
+        def fields(self):
             return [e.attrib['name']
-                    for e in self.et
-                    if e.tag == 'property']
+                    for e in self.et]
 
         def __str__(self):
             return 'CoiotDBusInterface<{}>'.format(self.et.attrib['name'])
@@ -80,8 +79,8 @@ class CoiotDBus:
         d = CoiotDBusDeviceInterface(device, device.ID).register_on(self.bus)
         self.publication._at_exit(d.__exit__)
 
-    def get_interface_for(self, prop):
+    def get_interface_for(self, field):
         for i in self.known_interfaces:
-            if prop in i.properties:
+            if field in i.fields:
                 return i.xml()
         raise Exception("property {} belongs to no know interface".format(prop))
