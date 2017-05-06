@@ -44,8 +44,8 @@ class CoiotDBusDeviceInterface:
 
     def __str__(self):
         return "{} {}".format(self.path,
-                               [e.attrib['name']
-                                for e in ElementTree.fromstring(self.dbus)])
+                              [e.attrib['name']
+                               for e in ElementTree.fromstring(self.dbus)])
 
 
 def CoiotDBusInterface(xml):
@@ -74,7 +74,7 @@ class CoiotDBus:
     def __init__(self, bus):
         self.bus = bus
         root_interface = ('/org/coiot', self,
-                       "<node>{}</node>".format(INTROSPECTABLE_DBUS))
+                          "<node>{}</node>".format(INTROSPECTABLE_DBUS))
         self.publication = self.bus.publish('org.coiot', root_interface)
         self.known_interfaces = []
         for path in glob.glob('dbus-1/interfaces/org.coiot.*.xml'):

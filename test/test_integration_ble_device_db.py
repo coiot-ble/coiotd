@@ -37,13 +37,14 @@ class TestIntegrationBLEDeviceDBSwitchable(unittest.TestCase):
 
         # devices
         self.updates = set()
-        self.devices = CoiotDevice.load(self.db, lambda d: self.updates.add(d))
+        self.devices = CoiotDevice.load(self.db, self.updates.add)
 
         # dbus
         self.dbus_bus = Mock()
-        self.dbus_bus.register_object.return_value = Mock()
-        self.dbus_bus.register_object.return_value.__enter__ = Mock(return_value=(Mock(), None))
-        self.dbus_bus.register_object.return_value.__exit__ = None
+        reg_rv = Mock()
+        reg_rv.__enter__ = Mock(return_value=(Mock(), None))
+        reg_rv.__exit__ = None
+        self.dbus_bus.register_object.return_value = reg_rv
 
         self.dbus = CoiotDBus(self.dbus_bus)
         for d in self.devices:

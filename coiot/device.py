@@ -32,9 +32,8 @@ class CoiotDevice:
             al[k] = v
 
     def __dir__(self):
-        return object.__dir__(self) + [p
-                                       for p in dir(self.db)
-                                       if p[0].isupper() and not p.startswith("Future")]
+        return object.__dir__(self) + [p for p in dir(self.db)
+                                       if p[0].isupper()]
 
     def update(self):
         while self.action_list_update:

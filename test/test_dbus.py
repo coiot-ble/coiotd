@@ -15,15 +15,17 @@ class CoiotDBusBasicTest(unittest.TestCase):
     """
     def setUp(self):
         self.bus = Mock()
-        self.bus.register_object.return_value = Mock()
-        self.bus.register_object.return_value.__enter__ = Mock(return_value=(Mock(), None))
-        self.bus.register_object.return_value.__exit__ = None
+        reg_rv = Mock()
+        reg_rv.__enter__ = Mock(return_value=(Mock(), None))
+        reg_rv.__exit__ = None
+        self.bus.register_object.return_value = reg_rv
 
         self.coiot_bus = CoiotDBus(self.bus)
 
     def test_setup(self):
         self.bus.publish.assert_called_once()
         self.assertEqual('org.coiot', self.bus.publish.call_args[0][0])
+
 
 class CoiotDBusDisplayableTest(CoiotDBusBasicTest):
     """
@@ -58,6 +60,7 @@ class CoiotDBusDisplayableTest(CoiotDBusBasicTest):
         self.dbus_device.Name = "Foo"
         self.assertEqual("Foo", self.device.Name)
 
+
 class CoiotDBusMultipleInterfacesTest(CoiotDBusBasicTest):
     """
     One object on the bus with interfaces Displayable1, Switchable1, Sensor1
@@ -91,5 +94,6 @@ class CoiotDBusMultipleInterfacesTest(CoiotDBusBasicTest):
                                  for e in et)))
 
     def test_call_method(self):
-        self.assertEqual(self.device.SwitchableLog.return_value, self.dbus_device.SwitchableLog(0, 3))
+        self.assertEqual(self.device.SwitchableLog.return_value,
+                         self.dbus_device.SwitchableLog(0, 3))
         self.device.SwitchableLog.assert_called_once_with(0, 3)

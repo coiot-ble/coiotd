@@ -1,28 +1,39 @@
 #! /usr/bin/env python
 
 from gi.repository import GLib
-from ble import client
-import time
+import pydbus
 import coiot.dbus
 import bluez
-import pydbus
-
-
-class CoiotBle:
-    def __init__(self):
-        self.client = client.BleClient(bluez.DBusBluez().adapters['hci0'])
-        time.sleep(2)
-        self.client.connect()
-        self.devices = {}
-        gpios = self.client.get_every_single_gpio()
-        for name, gpio in gpios.items():
-            for i, g in enumerate(gpio):
-                n = name + "-" + str(i)
-                d = coiot.dbus.CoiotLamp(g)
-                self.devices[n] = d
-
+from coiot.device import CoiotDevice
+from coiot.db import CoiotDB
+from ble.client import BleClient
+import logging
 
 if __name__ == "__main__":
-    coiot = coiot.dbus.CoiotDBus(pydbus.SystemBus(), CoiotBle())
+    for logn in 'DB', 'DBus', 'Device', 'BLE':
+        logging.getLogger(logn).level = logging.DEBUG
+
+    db = CoiotDB('/tmp/coiot.db')
+    dev = db.install()
+    dev.install_interface(coiot.db.Switchable, On=False)
+    dev.install_interface(coiot.driver.BLEDriverParameters,
+                          Mac="00:00:00:00:00:00")
+
+    adapter = bluez.DBusBluez().adapters['hci0']
+    client = BleClient(adapter)
+    driver = bluez.BluezBLEDriver(client)
+
+    updates = set()
+    CoiotDevice.load(db, updates.add)
+
+    def idle_push_updates():
+        while updates:
+            d = updates.pop()
+            d.update()
+        return True
+
+    coiot.dbus.CoiotDBus(pydbus.SystemBus())
+
     loop = GLib.MainLoop()
+    GLib.idle_add(idle_push_updates)
     loop.run()
