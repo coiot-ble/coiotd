@@ -70,12 +70,12 @@ class CoiotDBusMultipleInterfacesTest(CoiotDBusBasicTest):
         self.device.Name = "foo"
         self.device.Type = "Bar"
         self.device.On = False
-        self.device.SwitchableLog = lambda f, t: [(1, False), (2, True)]
+        self.device.SwitchableLog.return_value = [(1, False), (2, True)]
         self.device.Value = 1337
         self.device.Exponent = -2
         self.device.Unit = "Degree C"
         self.device.MeasureDate = 3
-        self.device.SensorLog = lambda f, t: [(1, 1234), (2, 1515)]
+        self.device.SensorLog.return_value = [(1, False), (2, True)]
         self.dbus_device = DBusDevice(self.device)
 
     def test_setup(self):
@@ -90,10 +90,6 @@ class CoiotDBusMultipleInterfacesTest(CoiotDBusBasicTest):
                                  and e.attrib['name'] == "org.coiot." + itname
                                  for e in et)))
 
-    def test_get(self):
-        self.assertEqual(self.device.Name, self.dbus_device.Name)
-        self.assertEqual(self.device.Type, self.dbus_device.Type)
-
-    def test_set(self):
-        self.dbus_device.Name = "Foo"
-        self.assertEqual("Foo", self.device.Name)
+    def test_call_method(self):
+        self.assertEqual(self.device.SwitchableLog.return_value, self.dbus_device.SwitchableLog(0, 3))
+        self.device.SwitchableLog.assert_called_once_with(0, 3)
