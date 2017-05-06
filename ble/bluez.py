@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import pydbus
-from dbus_node import DBusNode
+from .dbus_node import DBusNode
 
 
 class DBusBluez(DBusNode):

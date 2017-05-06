@@ -3,10 +3,11 @@
 from gi.repository import GLib
 import pydbus
 import coiot.dbus
-import bluez
 from coiot.device import CoiotDevice
 from coiot.db import CoiotDB
+import ble.bluez
 from ble.client import BleClient
+import ble.driver
 import logging
 
 if __name__ == "__main__":
@@ -16,12 +17,12 @@ if __name__ == "__main__":
     db = CoiotDB('/tmp/coiot.db')
     dev = db.install()
     dev.install_interface(coiot.db.Switchable, On=False)
-    dev.install_interface(coiot.driver.BLEDriverParameters,
+    dev.install_interface(ble.driver.BLEDriverParameters,
                           Mac="00:00:00:00:00:00")
 
-    adapter = bluez.DBusBluez().adapters['hci0']
+    adapter = ble.bluez.DBusBluez().adapters['hci0']
     client = BleClient(adapter)
-    driver = bluez.BluezBLEDriver(client)
+    driver = ble.driver.BluezBLEDriver(client)
 
     updates = set()
     CoiotDevice.load(db, updates.add)
@@ -35,5 +36,8 @@ if __name__ == "__main__":
     coiot.dbus.CoiotDBus(pydbus.SystemBus())
 
     loop = GLib.MainLoop()
-    GLib.idle_add(idle_push_updates)
-    loop.run()
+    GLib.timeout_add(100, idle_push_updates)
+    try:
+        loop.run()
+    finally:
+        driver.thread.stop()
