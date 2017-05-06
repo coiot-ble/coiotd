@@ -1,6 +1,9 @@
 #! /usr/bin/env python
 import glob
 from xml.etree import ElementTree
+import logging
+
+log = logging.getLogger('DBus')
 
 INTROSPECTABLE_DBUS = """
 <interface name="org.freedesktop.Introspectable">
@@ -36,7 +39,13 @@ class CoiotDBusDeviceInterface:
         self.dbus = '<node>{}</node>'.format("".join(device.interfaces))
 
     def register_on(self, bus):
+        log.info('register {}'.format(self))
         return bus.register_object(self.device, self.path, self.dbus)
+
+    def __str__(self):
+        return "{} {}".format(self.path,
+                               [e.attrib['name']
+                                for e in ElementTree.fromstring(self.dbus)])
 
 
 def CoiotDBusInterface(xml):

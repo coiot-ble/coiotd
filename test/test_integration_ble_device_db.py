@@ -4,15 +4,6 @@ from coiot_device import CoiotDevice
 from ble import client, driver, gatt_uuid
 import coiot_db
 from test.mock_ble import MockBluezAdapter, StubDigitalAutomationIO
-import logging
-import sys
-
-
-def activate_log(*names):
-    for name in names:
-        log = logging.getLogger(name)
-        log.level = logging.DEBUG
-        log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 class TestIntegrationBLEDeviceDBSwitchable(unittest.TestCase):
