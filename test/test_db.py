@@ -1,5 +1,5 @@
 import unittest
-from coiot_db import CoiotDB, Switchable, Displayable
+from coiot.db import CoiotDB, Switchable, Displayable
 
 
 class CoiotDBTestSetup(unittest.TestCase):

@@ -1,13 +1,13 @@
-from action_list import DeviceActionList
+from coiot.action_list import DeviceActionList
 import threading
-import coiot_db
+import coiot.db
 from . import client, gatt_uuid
 import logging
 
 log = logging.getLogger('BLE')
 
 
-@coiot_db.CoiotDBInterface.declare
+@coiot.db.CoiotDBInterface.declare
 class BLEDriverParameters:
     @classmethod
     def load(Cls, self):

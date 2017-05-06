@@ -1,6 +1,6 @@
 #! /usr/bin/env python
-from coiot_device import CoiotDevice
-import coiot_db
+from coiot.device import CoiotDevice
+import coiot.db
 from ble import driver
 import os
 import unittest
@@ -13,9 +13,9 @@ class TestCoiotDevice(unittest.TestCase):
             os.remove(filename)
         except FileNotFoundError:
             pass
-        self.db = coiot_db.CoiotDB(filename)
+        self.db = coiot.db.CoiotDB(filename)
         d = self.db.install()
-        d.install_interface(coiot_db.Displayable, Name="Foo")
+        d.install_interface(coiot.db.Displayable, Name="Foo")
         d.install_interface(driver.BLEDriverParameters,
                             Mac="00:01:02:03:04:05")
         self.ble = driver.BluezBLEDriver(None)

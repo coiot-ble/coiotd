@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-from coiot_dbus import DBusDevice, CoiotDBus
+from coiot.dbus import DBusDevice, CoiotDBus
 import unittest
 from unittest.mock import Mock
 from xml.etree import ElementTree

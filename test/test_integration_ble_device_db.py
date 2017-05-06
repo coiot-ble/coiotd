@@ -1,8 +1,8 @@
 import time
 import unittest
-from coiot_device import CoiotDevice
+from coiot.device import CoiotDevice
 from ble import client, driver, gatt_uuid
-import coiot_db
+import coiot.db
 from test.mock_ble import MockBluezAdapter, StubDigitalAutomationIO
 
 
@@ -15,9 +15,9 @@ class TestIntegrationBLEDeviceDBSwitchable(unittest.TestCase):
                 os.remove(db_filename)
             except FileNotFoundError:
                 pass
-        self.db = coiot_db.CoiotDB(db_filename)
+        self.db = coiot.db.CoiotDB(db_filename)
         self.db_device = self.db.install()
-        self.db_device.install_interface(coiot_db.Switchable, On=False)
+        self.db_device.install_interface(coiot.db.Switchable, On=False)
         self.db_device.install_interface(driver.BLEDriverParameters,
                                          Mac="00:01:02:03:04:05")
 
