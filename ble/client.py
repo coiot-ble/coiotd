@@ -34,7 +34,9 @@ class BleAutomationIODigital:
             return {"offset": GLib.Variant('q', offset)}
 
     def read(self, offset=None):
+        log.info('{} start ReadValue'.format(self.__class__.__name__))
         r = self.characteristic.ReadValue(self.readwrite_param(offset))
+        log.info('{} ReadValue(offset={}) = {}'.format(self.__class__.__name__, offset, r))
         if offset is not None:
             return bool(r[0])
         else:
@@ -43,9 +45,10 @@ class BleAutomationIODigital:
     def write(self, value, offset=None):
         p = self.readwrite_param(offset)
         if offset is not None:
-            self.characteristic.WriteValue([int(value)], p)
-        else:
-            self.characteristic.WriteValue(value, p)
+            value = [int(value)]
+        log.info('{} start WriteValue'.format(self.__class__.__name__))
+        self.characteristic.WriteValue(value, p)
+        log.info('{} WriteValue(offset={}) = {}'.format(self.__class__.__name__, offset, value))
 
 
 class BleClient:

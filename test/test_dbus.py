@@ -37,7 +37,7 @@ class CoiotDBusDisplayableTest(CoiotDBusBasicTest):
         self.device.Name = "foo"
         self.device.Type = "Bar"
 
-        self.dbus_device = DBusDevice(self.device)
+        self.dbus_device = DBusDevice(self.coiot_bus, self.device)
 
     def test_setup(self):
         self.bus.register_object.assert_called_once()
@@ -76,7 +76,7 @@ class CoiotDBusMultipleInterfacesTest(CoiotDBusBasicTest):
         self.device.Unit = "Degree C"
         self.device.MeasureDate = 3
         self.device.SensorLog.return_value = [(1, False), (2, True)]
-        self.dbus_device = DBusDevice(self.device)
+        self.dbus_device = DBusDevice(self.coiot_bus, self.device)
 
     def test_setup(self):
         self.bus.register_object.assert_called_once()

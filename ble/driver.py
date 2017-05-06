@@ -18,7 +18,7 @@ class BLEDriverParameters:
             """, (self.id,)).fetchone()
         if r is None:
             return False
-        self.__id, self.mac = r
+        self.__id, self.Mac = r
         log.info("driver loaded for {}".format(self))
         return True
 
@@ -29,7 +29,7 @@ class BLEDriverParameters:
             VALUES(?, ?)
             """, (self.id, Mac))
         self.__id = r.lastrowid
-        self.mac = Mac
+        self.Mac = Mac
         log.info("install driver for {}".format(self))
 
     @property
@@ -67,15 +67,15 @@ class BluezBLEDriver:
         device.add_action_list(self.action_list.new(device))
 
     def set(self, device, k, v):
-        log.info("{} {} = {}".format(device.mac, k, v))
+        log.info("{} {} = {}".format(device.Mac, k, v))
         if self.client is not None:
-            ble_dev = self.client.devices[device.mac]
+            ble_dev = self.client.devices[device.Mac]
             if k == "On":
                 sv = ble_dev.services[gatt_uuid.AUTOMATION_IO]
                 char = sv.characteristics[gatt_uuid.DIGITAL]
                 client.BleAutomationIODigital(char).gpios[0].on = v
         device.queue_update(k, v)
-        log.info("success {} {} = {}".format(device.mac, k, v))
+        log.info("success {} {} = {}".format(device.Mac, k, v))
 
     def __str__(self):
         return type(self).__name__

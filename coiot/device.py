@@ -10,45 +10,50 @@ class CoiotDevice:
     and the DBus object (API)
     """
     def __init__(self, db, notify_update):
-        self._db = db
-        self._action_lists_set = []
-        self._action_list_update = {}
-        self._notify_update = notify_update
-        if hasattr(self._db, 'driver'):
-            self._db.driver.connect(self)
+        self.db = db
+        self.action_lists_set = []
+        self.action_list_update = {}
+        self.notify_update = notify_update
+        if hasattr(self.db, 'driver'):
+            self.db.driver.connect(self)
 
     def __getattr__(self, k):
-        if k.startswith('_'):
+        if k[0].islower():
             return super().__getattr__(k)
-        return getattr(self._db, k)
+        return getattr(self.db, k)
 
     def __setattr__(self, k, v):
-        if k.startswith('_'):
+        if k[0].islower():
             super().__setattr__(k, v)
             return
         log.info('set {} {} = {}'.format(self, k, v))
-        setattr(self._db, "Future"+k, v)
-        for al in self._action_lists_set:
+        setattr(self.db, "Future"+k, v)
+        for al in self.action_lists_set:
             al[k] = v
 
+    def __dir__(self):
+        return object.__dir__(self) + [p
+                                       for p in dir(self.db)
+                                       if p[0].isupper() and not p.startswith("Future")]
+
     def update(self):
-        while self._action_list_update:
-            k, v = self._action_list_update.popitem()
+        while self.action_list_update:
+            k, v = self.action_list_update.popitem()
             log.info('update {} {} = {}'.format(self, k, v))
-            setattr(self._db, k, v)
+            setattr(self.db, k, v)
 
     def queue_update(self, k, v):
-        self._action_list_update[k] = v
-        self._notify_update(self)
+        self.action_list_update[k] = v
+        self.notify_update(self)
 
     def add_action_list(self, al):
         log.info('add action list {}'.format(self))
-        self._action_lists_set.append(al)
+        self.action_lists_set.append(al)
 
     @classmethod
     def load(Cls, db, notify_update):
         return [CoiotDevice(d, notify_update) for d in db.devices]
 
     def __str__(self):
-        return "{}({}, driver={})".format(type(self).__name__, self._db,
-                                          self._db.driver)
+        return "{}({}, driver={})".format(type(self).__name__, self.db,
+                                          self.db.driver)

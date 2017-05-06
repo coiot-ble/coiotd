@@ -66,7 +66,7 @@ class StubDigitalAutomationIO(MockDBusGattService):
         class StubDigital(Guard):
             def __init__(self, inputs):
                 super().__init__()
-                self.value = [False] * inputs
+                self.value = [0] * inputs
 
             @Guard.self_guarded
             def ReadValue(self, darg):
@@ -84,9 +84,9 @@ class StubDigitalAutomationIO(MockDBusGattService):
                     assert(darg['offset'].is_signature('q'))
                     assert(len(value) == 1)
                     offset = darg['offset'].get_uint16()
-                    self.value[offset] = bool(value[0])
+                    self.value[offset] = int(value[0])
                 else:
                     assert(len(value) == len(self.value))
-                    self.value = [bool(v) for v in value]
+                    self.value = [int(v) for v in value]
         self.digital = StubDigital(inputs)
         super().__init__({gatt_uuid.DIGITAL: self.digital})

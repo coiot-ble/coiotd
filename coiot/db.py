@@ -237,6 +237,10 @@ def CoiotDBDevice(*arg, **kw):
                 """, (self.id, self.online, self.error))
 
         @property
+        def ID(self):
+            return str(self.id)
+
+        @property
         def Online(self):
             return self.online
 

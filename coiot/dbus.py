@@ -12,13 +12,13 @@ INTROSPECTABLE_DBUS = """
 
 
 class DBusDevice:
-    def __init__(self, proxy):
+    def __init__(self, bus, proxy):
         self.proxy = proxy
-        self.interfaces = set()
-        for f in self.proxy.__dict__:
-            if f[0].isupper() and f != "ID":
-                self.interfaces.add(CoiotDBus.instance.get_interface_for(f))
-        CoiotDBus.instance.register_device(self)
+        self.interfaces = set((i for i in (bus.get_interface_for(f)
+                                           for f in dir(self.proxy)
+                                           if f[0].isupper())
+                               if i is not None))
+        bus.register_device(self)
 
     def __setattr__(self, key, value):
         if key[0].islower():
@@ -71,8 +71,6 @@ def CoiotDBusInterface(xml):
 
 
 class CoiotDBus:
-    instance = None
-
     def __init__(self, bus):
         self.bus = bus
         root_interface = ('/org/coiot', self,
@@ -82,7 +80,6 @@ class CoiotDBus:
         for path in glob.glob('dbus-1/interfaces/org.coiot.*.xml'):
             with open(path, 'r') as f:
                 self.known_interfaces.append(CoiotDBusInterface(f.read()))
-        CoiotDBus.instance = self
 
     def register_device(self, device):
         d = CoiotDBusDeviceInterface(device, device.ID).register_on(self.bus)
@@ -92,4 +89,4 @@ class CoiotDBus:
         for i in self.known_interfaces:
             if field in i.fields:
                 return i.xml()
-        raise Exception("property {} belongs to no know interface".format(prop))
+        return None

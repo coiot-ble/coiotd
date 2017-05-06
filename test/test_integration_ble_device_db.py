@@ -1,6 +1,8 @@
 import time
 import unittest
+from unittest.mock import Mock
 from coiot.device import CoiotDevice
+from coiot.dbus import DBusDevice, CoiotDBus
 from ble import client, driver, gatt_uuid
 import coiot.db
 from test.mock_ble import MockBluezAdapter, StubDigitalAutomationIO
@@ -37,18 +39,29 @@ class TestIntegrationBLEDeviceDBSwitchable(unittest.TestCase):
         self.updates = set()
         self.devices = CoiotDevice.load(self.db, lambda d: self.updates.add(d))
 
+        # dbus
+        self.dbus_bus = Mock()
+        self.dbus_bus.register_object.return_value = Mock()
+        self.dbus_bus.register_object.return_value.__enter__ = Mock(return_value=(Mock(), None))
+        self.dbus_bus.register_object.return_value.__exit__ = None
+
+        self.dbus = CoiotDBus(self.dbus_bus)
+        for d in self.devices:
+            DBusDevice(self.dbus, d)
+        self.dbus_device = self.dbus_bus.register_object.call_args[0][0]
+
     def tearDown(self):
         self.driver.thread.stop()
 
     def test_setup(self):
         self.assertEqual(1, len(self.devices))
-        self.assertEqual(self.devices[0].On, False)
+        self.assertEqual(self.dbus_device.On, False)
 
     def test_switch(self):
-        self.devices[0].On = True
+        self.dbus_device.On = True
         time.sleep(0.01)
         self.assertEqual([True], self.ble_service.digital.value)
-        self.assertEqual(self.devices[0].On, False)
+        self.assertEqual(self.dbus_device.On, False)
         self.assertEqual(1, len(self.updates))
         self.updates.pop().update()
-        self.assertEqual(self.devices[0].On, True)
+        self.assertEqual(self.dbus_device.On, True)
