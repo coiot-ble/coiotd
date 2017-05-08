@@ -49,7 +49,7 @@ class TestIntegrationBLEDeviceDBSwitchable(unittest.TestCase):
         self.dbus = CoiotDBus(self.dbus_bus)
         for d in self.devices:
             DBusDevice(self.dbus, d)
-        self.dbus_device = self.dbus_bus.register_object.call_args[0][0]
+        self.dbus_device = self.dbus_bus.register_object.call_args[0][1]
 
     def tearDown(self):
         self.driver.thread.stop()

@@ -40,7 +40,7 @@ class CoiotDBusDeviceInterface:
 
     def register_on(self, bus):
         log.info('register {}'.format(self))
-        return bus.register_object(self.device, self.path, self.dbus)
+        return bus.register_object(self.path, self.device, self.dbus)
 
     def __str__(self):
         return "{} {}".format(self.path,
