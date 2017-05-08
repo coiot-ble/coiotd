@@ -98,8 +98,9 @@ A device with sensing capability
 - **SensorLog(from, to)** returns a list of tuples `(date, value)` measured between the two dates
 
 The units can be the following:
-- degree C
-- degree F
+- Degree C
+- Degree F
+- Movement: value between 0 and 1, with 0 being no movement at all and 1 being an unmistakable movement
 - H2O ppm
 - CO2 ppm
 - CO ppm
