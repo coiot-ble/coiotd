@@ -5,27 +5,46 @@ import pydbus
 import coiot.dbus
 from coiot.device import CoiotDevice
 from coiot.db import CoiotDB
-import ble.bluez
-from ble.client import BleClient
-import ble.driver
 import logging
+import sys
+import argparse
 
 if __name__ == "__main__":
-    for logn in 'DB', 'DBus', 'Device', 'BLE':
-        logging.getLogger(logn).level = logging.DEBUG
+    ap = argparse.ArgumentParser(description='COIoT devices control daemon')
+    ap.add_argument('-d', '--db', default='/tmp/coiot.db',
+                    help='database file')
+    ap.add_argument('-v', '--verbose', action='store_true', default=False,
+                    help='verbose logs')
+    ap.add_argument('--mock', action='store_true', default=False,
+                    help='Mock drivers instead of using the real drivers.')
 
-    db = CoiotDB('/tmp/coiot.db')
-    dev = db.install()
-    dev.install_interface(coiot.db.Switchable, On=False)
-    dev.install_interface(ble.driver.BLEDriverParameters,
-                          Mac="00:00:00:00:00:00")
+    args = ap.parse_args()
 
-    adapter = ble.bluez.DBusBluez().adapters['hci0']
-    client = BleClient(adapter)
-    driver = ble.driver.BluezBLEDriver(client)
+    for logn in 'DB', 'DBus', 'Device', 'BLE', 'Test':
+        log = logging.getLogger(logn)
+        log.addHandler(logging.StreamHandler(sys.stdout))
+        if args.verbose:
+            log.level = logging.DEBUG
+        else:
+            log.level = logging.WARNING
+
+    if args.mock:
+        import test.mock_driver
+        test.mock_driver.register()
+    else:
+        import ble.bluez
+        from ble.client import BleClient
+        import ble.driver
+
+    db = CoiotDB(args.db)
+
+    if not args.mock:
+        adapter = ble.bluez.DBusBluez().adapters['hci0']
+        client = BleClient(adapter)
+        driver = ble.driver.BluezBLEDriver(client)
 
     updates = set()
-    CoiotDevice.load(db, updates.add)
+    devices = CoiotDevice.load(db, updates.add)
 
     def idle_push_updates():
         while updates:
@@ -33,11 +52,14 @@ if __name__ == "__main__":
             d.update()
         return True
 
-    coiot.dbus.CoiotDBus(pydbus.SystemBus())
+    bus = coiot.dbus.CoiotDBus(pydbus.SystemBus())
+    for device in devices:
+        coiot.dbus.DBusDevice(bus, device)
 
     loop = GLib.MainLoop()
     GLib.timeout_add(100, idle_push_updates)
     try:
         loop.run()
     finally:
-        driver.thread.stop()
+        if not args.mock:
+            driver.thread.stop()

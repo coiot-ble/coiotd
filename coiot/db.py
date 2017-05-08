@@ -10,7 +10,7 @@ class CoiotDBInterface:
     @classmethod
     def declare(Cls, Interface):
         Cls.interfaces.add(Interface)
-        log.info('declare {}'.format(Interface))
+        log.info('declare {}'.format(Interface.__name__))
         return Interface
 
     @classmethod
