@@ -44,6 +44,7 @@ class CoiotDevice:
     def queue_update(self, k, v):
         self.action_list_update[k] = v
         self.notify_update(self)
+        log.info("waiting for update to {} {} = {}".format(self, k, v))
 
     def add_action_list(self, al):
         log.info('add action list {}'.format(self))

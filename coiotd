@@ -49,10 +49,18 @@ if __name__ == "__main__":
     devices = CoiotDevice.load(db, updates.add)
 
     def idle_push_updates():
+        if args.mock:
+            for d, u in test.mock_driver.MockDriverDevice.update_list.items():
+                while u:
+                    k, v = u.popitem()
+                    d.queue_update(k, v)
+                    updates.add(d)
+                    log.debug("mock {} {} = {}".format(d, k, v))
+
         while updates:
             d = updates.pop()
             d.update()
-            log.debug('update {}'.format(d))
+            log.debug('updated {}'.format(d))
         return True
 
     bus = coiot.dbus.CoiotDBus(pydbus.SystemBus())

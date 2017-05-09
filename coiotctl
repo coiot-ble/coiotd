@@ -1,0 +1,75 @@
+#! /usr/bin/env python
+import argparse
+import pydbus
+from xml.etree import ElementTree
+import cmd
+import traceback
+
+
+class CoiotDBus:
+    def __init__(self):
+        self.bus = pydbus.SystemBus()
+        self.coiot_devices = self.bus.get('org.coiot', '/org/coiot/device')
+        self.devices = {}
+        for n in [e.attrib['name']
+                  for e
+                  in ElementTree.fromstring(self.coiot_devices.Introspect())
+                  if e.tag == 'node']:
+            self.devices[n] = self.bus.get('org.coiot',
+                                           '/org/coiot/device/{}'.format(n))
+            for nc in [e.attrib['name']
+                       for e
+                       in ElementTree.fromstring(self.devices[n].Introspect())
+                       if e.tag == 'node']:
+                assert(nc not in self.devices)
+                path = '/org/coiot/device/{}/{}'.format(n, nc)
+                self.devices[nc] = self.bus.get('org.coiot', path)
+
+
+class CoiotCmd(cmd.Cmd):
+    def __init__(self, coiot):
+        super().__init__()
+        self.prompt = '# '
+        self.coiot = coiot
+
+    def do_list(self, line):
+        print(self.coiot.devices)
+
+    def do_set(self, line):
+        lh, val = (s.strip() for s in line.split('='))
+        dev, f = lh.split('.')
+        if (val[0] == '"' or val[0] == "'") and val[-1] == val[0]:
+            val = val[1:-2]
+        elif val in ("False", "True"):
+            val = (val == "True")
+        else:
+            val = int(val)
+        setattr(self.coiot.devices[dev], f, val)
+
+    def do_get(self, line):
+        if '.' in line:
+            dev, f = line.split('.')
+            print(getattr(self.coiot.devices[dev], f))
+        else:
+            device = self.coiot.devices[line]
+            attrs = [f for f in dir(device)
+                     if f[0].isupper()]
+            for f in attrs:
+                try:
+                    v = getattr(device, f)
+                    if not callable(v):
+                        print('{}: {}'.format(f, v))
+                    else:
+                        print('{}()'.format(f))
+                except Exception as e:
+                    print("Error getting {}".format(f))
+                    traceback.print_exc()
+
+    def do_EOF(self, line):
+        return True
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser(description='coiotd command-line client')
+
+    CoiotCmd(CoiotDBus()).cmdloop()
