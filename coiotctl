@@ -33,9 +33,17 @@ class CoiotCmd(cmd.Cmd):
         self.coiot = coiot
 
     def do_list(self, line):
+        """
+        List all COIoT devices
+        """
         print(self.coiot.devices)
 
     def do_set(self, line):
+        """
+        Set a COIoT device property.
+
+        # set device.Property = value
+        """
         lh, val = (s.strip() for s in line.split('='))
         dev, f = lh.split('.')
         if (val[0] == '"' or val[0] == "'") and val[-1] == val[0]:
@@ -47,6 +55,14 @@ class CoiotCmd(cmd.Cmd):
         setattr(self.coiot.devices[dev], f, val)
 
     def do_get(self, line):
+        """
+        Get a COIoT device property.
+
+        # get device
+            Returns all properties and functions of the device
+        # get device.Property
+            Returns value of the given device property
+        """
         if '.' in line:
             dev, f = line.split('.')
             print(getattr(self.coiot.devices[dev], f))
@@ -66,6 +82,9 @@ class CoiotCmd(cmd.Cmd):
                     traceback.print_exc()
 
     def do_EOF(self, line):
+        """
+        Exit
+        """
         return True
 
 
