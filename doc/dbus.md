@@ -12,7 +12,7 @@ Any COIoT interface of a subdevice must be present in the parent device.
 
 For example, a device that is a smart power plug with a power-usage sensor must be described as
 ```
-/org/coiot/<id>
+/org/coiot/device/<id>
                /1 -> .Switchable1
                /2 -> .Sensor1
 ```
@@ -22,14 +22,14 @@ This allows for a simple modelisation of complex setups.
 
 For example, a multiple socket that has two lamps plugged-in but a single switch to control them both:
 ```
-/org/coiot/<id> -> .Displayable1(type=Multiple socket) .Switchable1(with On)
+/org/coiot/device/<id> -> .Displayable1(type=Multiple socket) .Switchable1(with On)
                 /1 -> .Displayable1(type=Lamp) .Switchable1(without On)
                 /2 -> .Displayable1(type=Lamp) .Switchable1(without On)
 ```
 
 Other example, a temperature sensor hub with 3 slave sensors in the room:
 ```
-/org/coiot/<id> -> .Displayable1(type=Thermometer) .Sensor1(without any property)
+/org/coiot/device/<id> -> .Displayable1(type=Thermometer) .Sensor1(without any property)
                 /1 -> .Displayable1 .Sensor1
                 /2 -> .Displayable1 .Sensor1
                 /3 -> .Displayable1 .Sensor1
@@ -37,7 +37,7 @@ Other example, a temperature sensor hub with 3 slave sensors in the room:
 
 A temperature and humidity sensor for a potted plant, to be displayed together:
 ```
-/org/coiot/<id> -> .Displayable1(type=Plant) .Sensor1(without any property)
+/org/coiot/device/<id> -> .Displayable1(type=Plant) .Sensor1(without any property)
                 /1 -> .Sensor1(unit=H2O ppm, exponent=4)
                 /2 -> .Sensor1(unit=degrees C, exponent=-1)
 ```
@@ -136,7 +136,7 @@ That mean a write may never happen if another client is concurrently accessing t
 ## Target device
 
 In order to check what is the target state of a device, the future device can be used. For a
-device of path `/org/coiot/a/b/c`, its target device is `/org/coiot/target/a/b/c`.
+device of path `/org/coiot/device/a/b/c`, its target device is `/org/coiot/device/target/a/b/c`.
 
 The target device has exactly the same properties as the actual device, except that their value
 is not the actual one but the target one.

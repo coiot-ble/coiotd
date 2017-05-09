@@ -9,6 +9,8 @@ import logging
 import sys
 import argparse
 
+log = logging.getLogger('coiotd')
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description='COIoT devices control daemon')
     ap.add_argument('-d', '--db', default='/tmp/coiot.db',
@@ -50,6 +52,7 @@ if __name__ == "__main__":
         while updates:
             d = updates.pop()
             d.update()
+            log.debug('update {}'.format(d))
         return True
 
     bus = coiot.dbus.CoiotDBus(pydbus.SystemBus())

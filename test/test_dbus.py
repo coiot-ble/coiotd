@@ -44,7 +44,7 @@ class CoiotDBusDisplayableTest(CoiotDBusBasicTest):
     def test_setup(self):
         self.bus.register_object.assert_called_once()
         register_args = self.bus.register_object.call_args[0]
-        self.assertEqual('/org/coiot/1', register_args[0])
+        self.assertEqual('/org/coiot/device/1', register_args[0])
         self.assertEqual(self.dbus_device, register_args[1])
         # interface inference
         et = ElementTree.fromstring(register_args[2])
@@ -84,7 +84,7 @@ class CoiotDBusMultipleInterfacesTest(CoiotDBusBasicTest):
     def test_setup(self):
         self.bus.register_object.assert_called_once()
         register_args = self.bus.register_object.call_args[0]
-        self.assertEqual('/org/coiot/1', register_args[0])
+        self.assertEqual('/org/coiot/device/1', register_args[0])
         self.assertEqual(self.dbus_device, register_args[1])
         # interface inference
         et = ElementTree.fromstring(register_args[2])

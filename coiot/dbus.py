@@ -35,7 +35,7 @@ class DBusDevice:
 class CoiotDBusDeviceInterface:
     def __init__(self, device, path):
         self.device = device
-        self.path = "/org/coiot/" + path
+        self.path = "/org/coiot/device/" + path
         self.dbus = '<node>{}</node>'.format("".join(device.interfaces))
 
     def register_on(self, bus):
@@ -73,7 +73,7 @@ def CoiotDBusInterface(xml):
 class CoiotDBus:
     def __init__(self, bus):
         self.bus = bus
-        root_interface = ('/org/coiot', self,
+        root_interface = ('/org/coiot/device', self,
                           "<node>{}</node>".format(INTROSPECTABLE_DBUS))
         self.publication = self.bus.publish('org.coiot', root_interface)
         self.known_interfaces = []
