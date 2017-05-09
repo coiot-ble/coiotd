@@ -1,5 +1,6 @@
 import sqlite3
 import logging
+from coiot.datetime import CoiotDatetime
 
 log = logging.getLogger('DB')
 
@@ -125,11 +126,10 @@ class Switchable:
             VALUES(?, ?);
             """, (self.id, On,))
         self.__id = r.lastrowid
-        self.On = On
         self.db.execute("""
-            INSERT INTO SWITCHABLE_LOG(Switchable, Value)
-            VALUES(?, ?);
-            """, (self.__id, On,))
+            INSERT INTO SWITCHABLE_LOG(Date, Switchable, Value)
+            VALUES(?, ?, ?)
+            """, (CoiotDatetime.now().epoch, self.__id, On))
 
     @property
     def On(self):
@@ -144,9 +144,9 @@ class Switchable:
     @On.setter
     def On(self, value):
         self.db.execute("""
-            INSERT INTO SWITCHABLE_LOG(Switchable, Value)
-            VALUES(?, ?)
-            """, (self.__id, value))
+            INSERT INTO SWITCHABLE_LOG(Date, Switchable, Value)
+            VALUES(?, ?, ?)
+            """, (CoiotDatetime.now().epoch, self.__id, value))
 
     @property
     def FutureOn(self):
@@ -218,12 +218,21 @@ def CoiotDBDevice(*arg, **kw):
     properties are not supported (this is a database after all).
     """
     class CoiotDBDevice(Composite()):
-        def __init__(self, db, did, pdid, Error=False):
+        def __init__(self, db, did, pdid, last_online_epoch=None, Error=False):
             self.db = db
             self.id = did
             self.pdid = pdid
             self.online = False
             self.error = Error
+            if last_online_epoch is None:
+                last_online_epoch = self.db.execute("""
+                    SELECT Date
+                    FROM DEVICE_STATUS_LOG
+                    WHERE Device = ?
+                    ORDER BY ID DESC
+                    LIMIT 1
+                    """, (self.id,)).fetchone()[0]
+            self.last_online = CoiotDatetime.from_epoch(last_online_epoch)
             CoiotDBInterface.load_all(self)
 
             def forbidden_attr(self, k, *args):
@@ -232,9 +241,10 @@ def CoiotDBDevice(*arg, **kw):
 
         def log_status(self):
             self.db.execute("""
-                INSERT INTO DEVICE_STATUS_LOG(Device, Online, Error)
-                VALUES(?, ?, ?)
-                """, (self.id, self.online, self.error))
+                INSERT INTO DEVICE_STATUS_LOG(Device, Date, Online, Error)
+                VALUES(?, ?, ?, ?)
+                """, (self.id, CoiotDatetime.now().epoch,
+                      self.online, self.error))
 
         @property
         def ID(self):
@@ -249,6 +259,10 @@ def CoiotDBDevice(*arg, **kw):
             if self.online != v:
                 self.online = v
                 self.log_status()
+
+        @property
+        def LastOnline(self):
+            return self.last_online.epoch * 1000
 
         @property
         def Error(self):
@@ -287,7 +301,7 @@ class CoiotDB:
                 GROUP BY DEVICE.ID
                 ORDER BY DEVICE_STATUS_LOG.ID DESC
                 """):
-            d.append(CoiotDBDevice(self.db, did, pdid, bool(Error)))
+            d.append(CoiotDBDevice(self.db, did, pdid, Error=bool(Error)))
         return d
 
     def install(self, parent=None):
@@ -300,9 +314,10 @@ class CoiotDB:
             INSERT INTO DEVICE(Parent)
             VALUES(?)
             """, (pdid,))
-        device = CoiotDBDevice(self.db, r.lastrowid, pdid)
+        device = CoiotDBDevice(self.db, r.lastrowid, pdid,
+                               CoiotDatetime.now().epoch)
         self.db.execute("""
-            INSERT INTO DEVICE_STATUS_LOG(Device)
-            VALUES(?)
-            """, (device.id,))
+            INSERT INTO DEVICE_STATUS_LOG(Date, Device)
+            VALUES(?, ?)
+            """, (device.last_online.epoch, device.id,))
         return device
