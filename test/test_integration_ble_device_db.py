@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import Mock
 from coiot.device import CoiotDevice
 from coiot.dbus import DBusDevice, CoiotDBus
+from coiot.device_action_list import DeviceActionList
 from ble import client, driver, gatt_uuid
 import coiot.db
 from test.mock_ble import MockBluezAdapter, StubDigitalAutomationIO
@@ -33,11 +34,11 @@ class TestIntegrationBLEDeviceDBSwitchable(unittest.TestCase):
         self.ble_service = self.ble_device.services[gatt_uuid.AUTOMATION_IO]
         self.client = client.BleClient(self.adapter)
 
-        self.driver = driver.BluezBLEDriver(self.client)
+        self.updates = DeviceActionList()
+        self.driver = driver.BluezBLEDriver(self.client, self.updates)
 
         # devices
-        self.updates = set()
-        self.devices = CoiotDevice.load(self.db, self.updates.add)
+        self.devices = CoiotDevice.load(self.db)
 
         # dbus
         self.dbus_bus = Mock()
@@ -63,6 +64,8 @@ class TestIntegrationBLEDeviceDBSwitchable(unittest.TestCase):
         time.sleep(0.01)
         self.assertEqual([True], self.ble_service.digital.value)
         self.assertEqual(self.dbus_device.On, False)
-        self.assertEqual(1, len(self.updates))
-        self.updates.pop().update()
+        self.assertTrue(self.updates)
+        d, k, v = self.updates.pop()
+        d.update(k, v)
+        self.assertFalse(self.updates)
         self.assertEqual(self.dbus_device.On, True)

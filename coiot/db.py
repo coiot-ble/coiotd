@@ -15,6 +15,12 @@ class CoiotDBInterface:
         return Interface
 
     @classmethod
+    def undeclare(Cls, Interface):
+        Cls.interfaces.discard(Interface)
+        log.info('undeclare {}'.format(Interface.__name__))
+        return Interface
+
+    @classmethod
     def load_all(Cls, device):
         for Interface in Cls.interfaces:
             device.load_interface(Interface)

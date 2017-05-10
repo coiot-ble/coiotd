@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 from coiot.device import CoiotDevice
 import coiot.db
-from ble import driver
 import os
 import unittest
+from test.mock_driver import MockDeviceDriver
 
 
 class TestCoiotDevice(unittest.TestCase):
@@ -14,20 +14,22 @@ class TestCoiotDevice(unittest.TestCase):
         except FileNotFoundError:
             pass
         self.db = coiot.db.CoiotDB(filename)
-        d = self.db.install()
-        d.install_interface(coiot.db.Displayable, Name="Foo")
-        d.install_interface(driver.BLEDriverParameters,
-                            Mac="00:01:02:03:04:05")
-        self.ble = driver.BluezBLEDriver(None)
-        self.updates = []
-        self.devices = CoiotDevice.load(self.db,
-                                        lambda d: self.updates.append(d))
+        dbd = self.db.install()
+        dbd.install_interface(coiot.db.Displayable, Name="Foo")
+        MockDeviceDriver.register()
+        self.devices = CoiotDevice.load(self.db)
 
     def tearDown(self):
-        self.ble.thread.stop()
+        MockDeviceDriver.unregister()
 
     def test_setup(self):
-        self.devices[0].Name = "Bar"
+        self.assertEqual(1, len(self.devices))
         self.assertEqual("Foo", self.devices[0].Name)
-        self.updates[0].update()
-        self.assertEqual("Bar", self.devices[0].Name)
+
+    def test_set(self):
+        d = self.devices[0]
+        d.Name = "Bar"
+        self.assertEqual("Foo", d.Name)
+        MockDeviceDriver.driver.set.assert_called_once_with(d, "Name", "Bar")
+        d.update("Name", "Bar")
+        self.assertEqual("Bar", d.Name)

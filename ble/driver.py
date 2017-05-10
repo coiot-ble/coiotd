@@ -1,5 +1,5 @@
-from coiot.action_list import DeviceActionList
 import threading
+from coiot.device_action_list import DeviceActionList
 import coiot.db
 from . import client, gatt_uuid
 import logging
@@ -51,22 +51,22 @@ class BluezBLEDriver:
             while not self.stopped:
                 t = self.driver.action_list.pop()
                 if t is not None:
-                    d, k, v = t
-                    self.driver.set(d, k, v)
+                    self.driver.ble_set(*t)
 
-    def __init__(self, client):
+    def __init__(self, client, updates):
         self.client = client
         self.thread = BluezBLEDriver.BluezThread(self)
         self.action_list = DeviceActionList()
+        self.updates = updates
         type(self).instance = self
         self.thread.start()
 
     instance = None
 
-    def connect(self, device):
-        device.add_action_list(self.action_list.new(device))
-
     def set(self, device, k, v):
+        self.action_list.set(device, k, v)
+
+    def ble_set(self, device, k, v):
         log.info("{} {} = {}".format(device.Mac, k, v))
         if self.client is not None:
             ble_dev = self.client.devices[device.Mac]
@@ -74,7 +74,7 @@ class BluezBLEDriver:
                 sv = ble_dev.services[gatt_uuid.AUTOMATION_IO]
                 char = sv.characteristics[gatt_uuid.DIGITAL]
                 client.BleAutomationIODigital(char).gpios[0].on = v
-        device.queue_update(k, v)
+        self.updates.set(device, k, v)
         log.info("success {} {} = {}".format(device.Mac, k, v))
 
     def __str__(self):

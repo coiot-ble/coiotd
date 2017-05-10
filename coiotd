@@ -4,6 +4,7 @@ from gi.repository import GLib
 import pydbus
 import coiot.dbus
 from coiot.device import CoiotDevice
+from coiot.device_action_list import DeviceActionList
 from coiot.db import CoiotDB
 import logging
 import sys
@@ -30,37 +31,27 @@ if __name__ == "__main__":
         else:
             log.level = logging.WARNING
 
+    updates = DeviceActionList()
     if args.mock:
-        import test.mock_driver
-        test.mock_driver.register()
+        from test.mock_driver import MockDeviceDriver
+        MockDeviceDriver.register()
+        MockDeviceDriver.driver.set = updates.set
     else:
         import ble.bluez
         from ble.client import BleClient
         import ble.driver
-
-    db = CoiotDB(args.db)
-
-    if not args.mock:
         adapter = ble.bluez.DBusBluez().adapters['hci0']
         client = BleClient(adapter)
-        driver = ble.driver.BluezBLEDriver(client)
+        driver = ble.driver.BluezBLEDriver(client, updates)
 
-    updates = set()
-    devices = CoiotDevice.load(db, updates.add)
+    db = CoiotDB(args.db)
+    devices = CoiotDevice.load(db)
 
     def idle_push_updates():
-        if args.mock:
-            for d, u in test.mock_driver.MockDriverDevice.update_list.items():
-                while u:
-                    k, v = u.popitem()
-                    d.queue_update(k, v)
-                    updates.add(d)
-                    log.debug("mock {} {} = {}".format(d, k, v))
-
         while updates:
-            d = updates.pop()
-            d.update()
-            log.debug('updated {}'.format(d))
+            d, k, v = updates.pop()
+            d.update(k, v)
+            log.debug('updated {} {} = {}'.format(d, k, v))
         return True
 
     bus = coiot.dbus.CoiotDBus(pydbus.SystemBus())
