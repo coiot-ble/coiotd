@@ -20,6 +20,9 @@ class BluezBLEDriver:
             self.stopped = True
 
         def run(self):
+            log.info("connecting to devices...")
+            self.driver.client.connect()
+            log.info("connected")
             while not self.stopped:
                 t = self.driver.action_list.pop()
                 if t is not None:

@@ -98,3 +98,4 @@ class BleClient:
         for d in self.devices.values():
             log.info("connect to {}".format(d))
             d.proxy.Connect()
+            log.info("connected to {}".format(d))
