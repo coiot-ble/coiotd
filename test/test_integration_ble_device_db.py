@@ -6,6 +6,7 @@ from coiot.dbus import DBusDevice, CoiotDBus
 from coiot.device_action_list import DeviceActionList
 from ble import client, driver, gatt_uuid
 import coiot.db
+from ble.db_interface import BLEDriverParameters
 from test.mock_ble import MockBluezAdapter, StubDigitalAutomationIO
 
 
@@ -21,7 +22,7 @@ class TestIntegrationBLEDeviceDBSwitchable(unittest.TestCase):
         self.db = coiot.db.CoiotDB(db_filename)
         self.db_device = self.db.install()
         self.db_device.install_interface(coiot.db.Switchable, On=False)
-        self.db_device.install_interface(driver.BLEDriverParameters,
+        self.db_device.install_interface(BLEDriverParameters,
                                          Mac="00:01:02:03:04:05")
 
         # ble
