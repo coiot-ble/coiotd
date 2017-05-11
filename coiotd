@@ -51,7 +51,7 @@ if __name__ == "__main__":
         while updates:
             d, k, v = updates.pop()
             d.update(k, v)
-            log.debug('updated {} {} = {}'.format(d, k, v))
+            log.debug('updated {}.{} = {}'.format(d, k, v))
         return True
 
     bus = coiot.dbus.CoiotDBus(pydbus.SystemBus())

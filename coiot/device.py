@@ -21,7 +21,7 @@ class CoiotDevice:
         if k[0].islower():
             super().__setattr__(k, v)
             return
-        log.info('set {} {} = {}'.format(self, k, v))
+        log.info('set {}.{} = {}'.format(self, k, v))
         setattr(self.db, "Future"+k, v)
         self.db.driver.set(self, k, v)
 
@@ -30,7 +30,7 @@ class CoiotDevice:
                                        if p[0].isupper()]
 
     def update(self, k, v):
-        log.info('update {} {} = {}'.format(self, k, v))
+        log.info('update {}.{} = {}'.format(self, k, v))
         setattr(self.db, k, v)
 
     @classmethod
@@ -38,5 +38,4 @@ class CoiotDevice:
         return [CoiotDevice(d) for d in db.devices.values()]
 
     def __str__(self):
-        return "{}({}, driver={})".format(type(self).__name__, self.db,
-                                          self.db.driver)
+        return "<Device {}>".format(self.ID)

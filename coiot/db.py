@@ -341,8 +341,8 @@ def CoiotDBDevice(*arg, **kw):
                 self.log_status()
 
         def __str__(self):
-            return "{}<{}>".format(type(self).__name__,
-                                   self.__class__.__bases__[0].__name__)
+            return "{}<ID={}, {}>".format(type(self).__name__, self.ID,
+                                          self.__class__.__bases__[0].__name__)
 
     return CoiotDBDevice(*arg, **kw)
 

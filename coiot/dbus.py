@@ -24,12 +24,14 @@ class DBusDevice:
         if key[0].islower():
             super().__setattr__(key, value)
             return
+        log.debug("set {}.{} = {}".format(self.proxy, key, value))
         setattr(self.proxy, key, value)
 
     def __getattr__(self, key):
         if key[0].islower():
             return super().__getattr__(key)
         v = getattr(self.proxy, key)
+        log.debug("get {}.{} = {}".format(self.proxy, key, v))
 
         return v if v is not None else ''
 
