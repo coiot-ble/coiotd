@@ -61,6 +61,15 @@ class CoiotCmd(cmd.Cmd):
                 args.append(v)
             Interface.install(d, *args)
 
+    def do_set(self, line):
+        """
+        Set directly a database field.
+        """
+        lh, val = (s.strip() for s in line.split('='))
+        dev, f = lh.split('.')
+        dev = int(dev)
+        setattr(self.db.devices[dev], f, val)
+
     def do_EOF(self, line):
         """
         Exit
