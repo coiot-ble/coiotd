@@ -61,7 +61,7 @@ values read will be outdated.
 A device with that interface can appear in a UI.
 
 - **Name**: User-friendly name of the device
-- **Type**: optional COIoT object type
+- **Type**: optional COIoT object type: if there is no type, its value is an empty string
 
 ## Object type
 A COIoT object representation can be deducted from two infos: the device type and its state.

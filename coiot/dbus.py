@@ -29,7 +29,9 @@ class DBusDevice:
     def __getattr__(self, key):
         if key[0].islower():
             return super().__getattr__(key)
-        return getattr(self.proxy, key)
+        v = getattr(self.proxy, key)
+
+        return v if v is not None else ''
 
 
 class CoiotDBusDeviceInterface:
