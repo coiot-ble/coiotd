@@ -10,6 +10,10 @@ class MockDeviceDriver:
 
     @classmethod
     def load(Cls, self):
+        if hasattr(self, 'driver'):
+            log.error("{}: {} already has a driver: {}".format(Cls, self,
+                                                               self.driver))
+            return
         self.driver = Cls.driver
         log.info('Mock driver loaded for {}'.format(self))
         return True
