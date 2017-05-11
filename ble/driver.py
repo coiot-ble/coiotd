@@ -15,7 +15,7 @@ class BLEDriverParameters:
             SELECT ID, Mac
             FROM DRIVER_BLE
             WHERE Device = ?
-            """, (self.id,)).fetchone()
+            """, self.id).fetchone()
         if r is None:
             return False
         self.__id, self.Mac = r
@@ -24,10 +24,11 @@ class BLEDriverParameters:
 
     @classmethod
     def install(Cls, self, Mac):
+        Mac = coiot.db.sqlite_cast(str, Mac)
         r = self.db.execute("""
             INSERT INTO DRIVER_BLE(Device, Mac)
             VALUES(?, ?)
-            """, (self.id, Mac))
+            """, self.id, Mac)
         self.__id = r.lastrowid
         self.Mac = Mac
         log.info("install driver for {}".format(self))

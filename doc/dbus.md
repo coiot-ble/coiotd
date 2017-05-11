@@ -44,7 +44,7 @@ A temperature and humidity sensor for a potted plant, to be displayed together:
 
 ## COIoT data types
 
-- Dates are 64 bits unsigned (t) representing a time in millisecond in UTC since the epoch
+- Dates are double precisions floats (d) representing a number of seconds in UTC since the epoch.
 
 # org.coiot.Reachable1
 

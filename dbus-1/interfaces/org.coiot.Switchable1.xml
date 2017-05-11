@@ -5,9 +5,9 @@
 	<interface name="org.coiot.Switchable1">
 		<property name="On" type="b" access="readwrite" />
 		<method name="SwitchableLog">
-			<arg name="from" type="t"/>
-			<arg name="to" type="t"/>
-			<arg name="switch" type="a{tb}"/>
+			<arg name="from" type="d"/>
+			<arg name="to" type="d"/>
+			<arg name="switch" type="a{db}"/>
 		</method>
 	</interface>
 </node>

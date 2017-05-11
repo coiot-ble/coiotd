@@ -4,5 +4,5 @@ cd "$(dirname "$(readlink -f "$0")")/.." || exit 2
 tr=0
 python -m flake8
 tr=$((tr|$?))
-python -m flake8 coiotd coiotctl
+python -m flake8 coiotd coiotctl coiotdbctl
 exit $((tr|$?))

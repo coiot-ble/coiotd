@@ -4,7 +4,7 @@
 <node xmlns:doc="http://www.freedesktop.org/dbus/1.0/doc.dtd">
 	<interface name="org.coiot.Reachable1">
 		<property name="Online" type="b" access="read" />
-		<property name="LastOnline" type="t" access="read" />
+		<property name="LastOnline" type="d" access="read" />
 		<property name="Error" type="b" access="readwrite" />
 	</interface>
 </node>

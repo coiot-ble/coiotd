@@ -1,0 +1,77 @@
+#! /usr/bin/env python
+import argparse
+import cmd
+from coiot.db import CoiotDB, CoiotDBInterface
+import inspect
+
+
+class CoiotCmd(cmd.Cmd):
+    def __init__(self, dbfname):
+        super().__init__()
+        self.prompt = '{}> '.format(dbfname)
+        self.db = CoiotDB(dbfname)
+
+    def do_list(self, line):
+        """
+        List all devices and their interfaces
+        """
+        if not self.db.devices:
+            print("database is empty")
+
+        for d in self.db.devices.values():
+            print("{}: {}".format(d.ID, d))
+            for p in dir(d):
+                if p[0].isupper() and p != "ID":
+                    print("\t{}: {}".format(p, getattr(d, p)))
+
+    def do_new(self, line):
+        """
+        Create a new COIoT device and displays its ID
+        """
+        d = self.db.install()
+        print(d.ID)
+
+    def do_install(self, line):
+        """
+        > install ID InterfaceName [InterfaceName...]
+        Install the given interfaces to the device of given ID.
+        """
+        d = self.db.devices[int(line.split(" ")[0])]
+        line = " ".join(line.split(" ")[1:])
+        for ifname in [i.strip() for i in line.split()]:
+            # some inspect magic to get the argument names
+            Interface = CoiotDBInterface.get(ifname)
+            print("{} fields (ctrl+D for default)".format(ifname))
+            argspec = inspect.getargspec(Interface.install)
+            args = []
+            if argspec.defaults:
+                defaults_nb = len(argspec.defaults)
+            else:
+                defaults_nb = 0
+            for i, arg in enumerate(argspec.args[2:]):
+                if i >= len(argspec.args[2:]) - defaults_nb:
+                    default = argspec.defaults[i - defaults_nb]
+                    try:
+                        v = input("\t{} (default={}): ".format(arg, default))
+                    except EOFError:
+                        v = default
+                        print()
+                else:
+                        v = input("\t{}: ".format(arg))
+                args.append(v)
+            Interface.install(d, *args)
+
+    def do_EOF(self, line):
+        """
+        Exit
+        """
+        return True
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser(description="""COIoT database management.
+                                 This tool is for test purposes ONLY and should
+                                 not be used in scripts.""")
+    ap.add_argument("database", help="database file to use")
+    args = ap.parse_args()
+    CoiotCmd(args.database).cmdloop()
