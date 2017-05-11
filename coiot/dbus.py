@@ -93,4 +93,5 @@ class CoiotDBus:
         for i in self.known_interfaces:
             if field in i.fields:
                 return i.xml()
+        log.warning("no DBus interface known for {}".format(field))
         return None
