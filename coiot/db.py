@@ -1,6 +1,7 @@
 import sqlite3
 import logging
 from coiot.datetime import CoiotDatetime
+import os
 
 log = logging.getLogger('DB')
 
@@ -353,7 +354,8 @@ class CoiotDB:
         self.db.isolation_level = None
         version = next(iter(self.db.execute("PRAGMA USER_VERSION")))[0]
         if version != 1:
-            with open('sql/create_db.sql') as f:
+            with open(os.path.dirname(os.path.realpath(__file__)) +
+                      '/../sql/create_db.sql') as f:
                 self.db.executescript(f.read())
 
     @property
