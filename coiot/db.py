@@ -298,7 +298,7 @@ class CoiotDB:
 
     @property
     def devices(self):
-        d = []
+        d = {}
         for did, pdid, Error in self.db.execute("""
                 SELECT DEVICE.ID, Parent, DEVICE_STATUS_LOG.Error
                 FROM DEVICE
@@ -307,7 +307,7 @@ class CoiotDB:
                 GROUP BY DEVICE.ID
                 ORDER BY DEVICE_STATUS_LOG.ID DESC
                 """):
-            d.append(CoiotDBDevice(self.db, did, pdid, Error=bool(Error)))
+            d[did] = CoiotDBDevice(self.db, did, pdid, Error=bool(Error))
         return d
 
     def install(self, parent=None):

@@ -60,12 +60,12 @@ class OneDeviceTestSetup(CoiotDBTestSetup):
 
     def reload(self):
         self.setUp(cleanup=False)
-        self.device = self.db.devices[0]
+        _, self.device = self.db.devices.popitem()
 
     def test_reload(self):
         self.setUp(cleanup=False)
         self.assertEqual(1, len(self.db.devices))
-        self.device = self.db.devices[0]
+        _, self.device = self.db.devices.popitem()
 
 
 class DisplayableUnitTest(OneDeviceTestSetup):

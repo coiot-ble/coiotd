@@ -35,7 +35,7 @@ class CoiotDevice:
 
     @classmethod
     def load(Cls, db):
-        return [CoiotDevice(d) for d in db.devices]
+        return [CoiotDevice(d) for d in db.devices.values()]
 
     def __str__(self):
         return "{}({}, driver={})".format(type(self).__name__, self.db,
