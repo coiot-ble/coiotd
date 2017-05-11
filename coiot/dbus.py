@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 import glob
+import os
 from xml.etree import ElementTree
 import logging
 
@@ -81,7 +82,8 @@ class CoiotDBus:
                           "<node>{}</node>".format(INTROSPECTABLE_DBUS))
         self.publication = self.bus.publish('org.coiot', root_interface)
         self.known_interfaces = []
-        for path in glob.glob('dbus-1/interfaces/org.coiot.*.xml'):
+        for path in glob.glob(os.path.dirname(os.path.realpath(__file__)) +
+                              '/../dbus-1/interfaces/org.coiot.*.xml'):
             with open(path, 'r') as f:
                 self.known_interfaces.append(CoiotDBusInterface(f.read()))
 
