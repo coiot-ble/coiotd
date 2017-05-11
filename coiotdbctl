@@ -41,6 +41,9 @@ class CoiotCmd(cmd.Cmd):
         for ifname in [i.strip() for i in line.split()]:
             # some inspect magic to get the argument names
             Interface = CoiotDBInterface.get(ifname)
+            if Interface is None:
+                print("no such interface {}".format(ifname))
+                return
             print("{} fields (ctrl+D for default)".format(ifname))
             argspec = inspect.getargspec(Interface.install)
             args = []
