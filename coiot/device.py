@@ -21,6 +21,8 @@ class CoiotDevice:
         if k[0].islower():
             super().__setattr__(k, v)
             return
+        if not hasattr(self.db, "driver"):
+            raise AttributeError("{} has no driver".format(self.db))
         log.info('set {}.{} = {}'.format(self, k, v))
         setattr(self.db, "Future"+k, v)
         self.db.driver.set(self, k, v)
