@@ -42,7 +42,7 @@ class BluezBLEDriver:
     def ble_set(self, device, k, v):
         log.info("{} {} = {}".format(device.Mac, k, v))
         if self.client is not None:
-            ble_dev = self.client.devices[device.Mac][0]
+            ble_dev = self.client.devices[device.Mac][device.Idx]
             setattr(ble_dev, k, v)
         self.updates.set(device, k, v)
         log.info("success {} {} = {}".format(device.Mac, k, v))

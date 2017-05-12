@@ -23,7 +23,8 @@ class TestIntegrationBLEDeviceDBSwitchable(unittest.TestCase):
         self.db_device = self.db.install()
         self.db_device.install_interface(coiot.db.Switchable, On=False)
         self.db_device.install_interface(BLEDriverParameters,
-                                         Mac="00:01:02:03:04:05")
+                                         Mac="00:01:02:03:04:05",
+                                         Idx=0)
 
         # ble
         self.adapter = MockBluezAdapter({

@@ -8,25 +8,27 @@ class BLEDriverParameters:
     @classmethod
     def load(Cls, self):
         r = self.db.execute("""
-            SELECT ID, Mac
+            SELECT ID, Mac, Idx
             FROM DRIVER_BLE
             WHERE Device = ?
             """, self.id).fetchone()
         if r is None:
             return False
-        self.__id, self.Mac = r
+        self.__id, self.Mac, self.Idx = r
         log.info("driver loaded for {}".format(self))
         return True
 
     @classmethod
-    def install(Cls, self, Mac):
+    def install(Cls, self, Mac, Idx=None):
         Mac = sqlite_cast(str, Mac)
+        Idx = sqlite_cast(int, Idx)
         r = self.db.execute("""
-            INSERT INTO DRIVER_BLE(Device, Mac)
-            VALUES(?, ?)
-            """, self.id, Mac)
+            INSERT INTO DRIVER_BLE(Device, Mac, Idx)
+            VALUES(?, ?, ?)
+            """, self.id, Mac, Idx)
         self.__id = r.lastrowid
         self.Mac = Mac
+        self.Idx = Idx
         log.info("install driver for {}".format(self))
 
     @property
