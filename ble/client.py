@@ -1,30 +1,65 @@
 from . import gatt_uuid
-from .gatt_uuid import formatUUID
 from gi.repository import GLib
 import logging
 
 log = logging.getLogger('BLE')
 
+drivers = []
 
-class BleAutomationIODigitalSingle:
+
+def BleDriver(o):
+    drivers.append(o)
+    return o
+
+
+class CompositeBleDevice:
+    def __init__(self):
+        self.objects = []
+
+    def extend(self, o):
+        self.objects.append(o)
+
+    def __getattr__(self, k):
+        if k[0].isupper():
+            for o in self.objects:
+                if k in dir(o):
+                    return getattr(o, k)
+        else:
+            return super().__getattr__(k)
+
+    def __setattr__(self, k, v):
+        if k[0].isupper():
+            for o in self.objects:
+                if k in dir(o):
+                    return setattr(o, k, v)
+        else:
+            return super().__setattr__(k, v)
+
+    def __dir__(self):
+        return [k for o in self.objects for k in dir(o)]
+
+
+class BleAutomationIODigitalDevice:
     def __init__(self, ble_device, index):
         self.ble = ble_device
         self.index = index
 
     @property
-    def on(self):
+    def On(self):
         return self.ble.read(self.index)
 
-    @on.setter
-    def on(self, value):
+    @On.setter
+    def On(self, value):
         return self.ble.write(value, self.index)
 
 
 class BleAutomationIODigital:
     def __init__(self, characteristic):
         self.characteristic = characteristic
-        self.gpios = [BleAutomationIODigitalSingle(self, i)
-                      for i in range(0, len(self.read()))]
+        self.gpios = {i: BleAutomationIODigitalDevice(self, i)
+                      for i in range(0, len(self.read()))}
+        log.debug("{} gpios: {}".format(len(self.gpios),
+                                        list(self.gpios.keys())))
 
     @classmethod
     def readwrite_param(Cls, offset):
@@ -53,49 +88,54 @@ class BleAutomationIODigital:
                                                         offset, value))
 
 
+@BleDriver
+class BleAutomationIODigitalDriver:
+    @classmethod
+    def probe(Cls, device):
+        service = device.services.get(gatt_uuid.AUTOMATION_IO)
+        if not service:
+            return {}
+        characteristic = service.characteristics.get(gatt_uuid.DIGITAL)
+        if not characteristic:
+            return {}
+        return BleAutomationIODigital(characteristic).gpios
+
+
+class CompositeBleDeviceDict(dict):
+    def __getitem__(self, k):
+        return super().setdefault(k, CompositeBleDevice())
+
+
+class BleDevicesDict(dict):
+    def __getitem__(self, k):
+        return super().setdefault(k, CompositeBleDeviceDict())
+
+
 class BleClient:
     def __init__(self, adapter):
         log.info("new BleClient with adapter {}".format(adapter))
         self.adapter = adapter
         self.adapter.proxy.Powered = True
 
-    @property
-    def devices(self):
-        return {a: d for (a, d) in self.adapter.devices.items()
-                if 'coiot' in d.proxy.Alias.lower()}
-
-    def get_services_by_uuid(self, uuid):
-        uuid = formatUUID(uuid)
-        r = {}
-        for a, d in self.devices.items():
-            for u, s in d.services.items():
-                if u == uuid:
-                    r[a] = s
-                    break
-        return r
-
-    def get_characteristics_by_uuid(self, service_uuid, characteristic_uuid):
-        service_uuid, characteristic_uuid = formatUUID(service_uuid,
-                                                       characteristic_uuid)
-        r = {}
-        for (a, s) in self.get_services_by_uuid(service_uuid).items():
-            for u, c in s.characteristics.items():
-                if u == characteristic_uuid:
-                    r[a] = c
-                    break
-        return r
-
-    def get_every_single_gpio(self):
-        gpios = {}
-        cc = self.get_characteristics_by_uuid(gatt_uuid.AUTOMATION_IO,
-                                              gatt_uuid.DIGITAL)
-        for n, c in cc.items():
-            gpios[n] = BleAutomationIODigital(c).gpios
-
-        return gpios
-
     def connect(self):
-        for d in self.devices.values():
+        self.devices = {}
+        for a, d in self.adapter.devices.items():
+            if 'coiot' not in d.proxy.Alias.lower():
+                continue
             log.info("connect to {}".format(d))
             d.proxy.Connect()
             log.info("connected to {}".format(d))
+
+            log.info("probe {}".format(d))
+            for driver in drivers:
+                devices = driver.probe(d)
+                for i, v in devices.items():
+                    da = self.devices.setdefault(a, {})
+                    da.setdefault(i, CompositeBleDevice()).extend(v)
+            log.info("probed {}".format(d))
+        for k, k2 in [(k, k2)
+                      for k in self.devices.keys()
+                      for k2 in self.devices[k].keys()]:
+            log.info("{}[{}]: {}".format(k, k2,
+                                         [a for a in dir(self.devices[k][k2])
+                                          if a[0].isupper()]))

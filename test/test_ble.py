@@ -1,6 +1,19 @@
+import logging
+import sys
 import unittest
+from unittest.mock import Mock
+from gi.repository import GLib
 from ble import client, gatt_uuid
-from test.mock_ble import MockBluezAdapter, StubDigitalAutomationIO
+
+log = logging.getLogger('BLE')
+log.addHandler(logging.StreamHandler(sys.stdout))
+log.level = logging.DEBUG
+
+
+def aio_offset(i):
+    if i is None:
+        return {}
+    return {'offset': GLib.Variant('q', i)}
 
 
 class TestBle(unittest.TestCase):
@@ -8,65 +21,93 @@ class TestBle(unittest.TestCase):
     A single device, with a single digital io
     """
     def setUp(self):
-        self.adapter = MockBluezAdapter({
-                "00:01:02:03:04:05": {
-                    gatt_uuid.AUTOMATION_IO: StubDigitalAutomationIO()
-                }
-            })
-        self.device = self.adapter.devices["00:01:02:03:04:05"]
-        self.digital_service = self.device.services[gatt_uuid.AUTOMATION_IO]
+        self.gpio = Mock()
+        self.gpio.ReadValue.return_value = [0]
+
+        aiod = Mock()
+        aiod.characteristics = {
+                gatt_uuid.formatUUID(gatt_uuid.DIGITAL): self.gpio
+            }
+
+        self.device = Mock()
+        self.device.services = {
+                gatt_uuid.formatUUID(gatt_uuid.AUTOMATION_IO): aiod
+            }
+        self.device.proxy.Alias = "Coiot dev"
+
+        self.adapter = Mock()
+        self.adapter.devices = {"00:01:02:03:04:05": self.device}
+
         self.client = client.BleClient(self.adapter)
 
     def test_setup(self):
         self.assertTrue(self.adapter.proxy.Powered)
         self.client.connect()
-        self.assertTrue(self.device.proxy.connected)
+        self.device.proxy.Connect.assert_called_once()
+        self.gpio.ReadValue.assert_called_once_with(aio_offset(None))
+        self.assertEqual(1, len(self.client.devices))
+
+        client_device = self.client.devices["00:01:02:03:04:05"]
+        self.assertEqual(1, len(client_device))
+        self.assertEqual(False, client_device[0].On)
 
 
 class TestDigital(TestBle):
     """
     A single device, with a single digital io
     """
-    def test_gpio_count(self):
-        gpio = self.client.get_every_single_gpio()
-        self.assertEqual(1, len(gpio))
-        self.assertEqual(1, len(gpio.popitem()[1]))
+
+    def setUp(self):
+        super().setUp()
+        self.client.connect()
+        self.client_device = self.client.devices["00:01:02:03:04:05"]
+
+    def test_setup(self):
+        pass
 
     def test_switch_on_off(self):
-        gpios = self.client.get_every_single_gpio()
-        self.assertEqual(len(gpios['00:01:02:03:04:05']), 1)
-        gpios['00:01:02:03:04:05'][0].on = True
-        self.assertEqual(self.digital_service.digital.value, [True])
-        gpios['00:01:02:03:04:05'][0].on = False
-        self.assertEqual(self.digital_service.digital.value, [False])
+        self.client_device[0].On = True
+        self.gpio.WriteValue.assert_called_once_with([1], aio_offset(0))
+
+        self.gpio.WriteValue.reset_mock()
+        self.client_device[0].On = False
+        self.gpio.WriteValue.assert_called_once_with([0], aio_offset(0))
+
+    def test_write_does_no_read(self):
+        self.gpio.ReadValue.reset_mock()
+        self.client_device[0].On = True
+        self.gpio.ReadValue.assert_not_called()
 
 
-class TestMultipleDigital(unittest.TestCase):
+class TestMultipleDigital(TestBle):
     """
     A single device, with multiple digital io
     """
     def setUp(self):
-        self.adapter = MockBluezAdapter({
-                "00:01:02:03:04:05": {
-                    gatt_uuid.AUTOMATION_IO: StubDigitalAutomationIO(2)
-                }
-            })
-        self.device = self.adapter.devices["00:01:02:03:04:05"]
-        self.digital_service = self.device.services[gatt_uuid.AUTOMATION_IO]
-        self.client = client.BleClient(self.adapter)
-        self.gpio = self.client.get_every_single_gpio()
+        super().setUp()
+        self.gpio.ReadValue.return_value = [0, 0]
 
-    def test_gpio_count(self):
-        self.assertEqual(1, len(self.gpio))
-        self.assertEqual(2, len(self.gpio.popitem()[1]))
+    def test_setup(self):
+        self.client.connect()
+        self.assertEqual(1, len(self.client.devices))
+
+        client_device = self.client.devices["00:01:02:03:04:05"]
+        self.assertEqual(2, len(client_device))
+        self.gpio.ReadValue.assert_called_once_with(aio_offset(None))
+
+        self.gpio.ReadValue = Mock(return_value=[0])
+        self.assertEqual(False, client_device[0].On)
+        self.gpio.ReadValue.assert_called_once_with(aio_offset(0))
+
+        self.gpio.ReadValue = Mock(return_value=[1])
+        self.assertEqual(True, client_device[1].On)
+        self.gpio.ReadValue.assert_called_once_with(aio_offset(1))
 
     def test_value(self):
-        gpio = self.gpio["00:01:02:03:04:05"]
-        gpio[0].on = True
-        self.assertEqual(self.digital_service.digital.value, [True, False])
-        gpio[1].on = True
-        self.assertEqual(self.digital_service.digital.value, [True, True])
-        gpio[0].on = False
-        self.assertEqual(self.digital_service.digital.value, [False, True])
-        gpio[1].on = False
-        self.assertEqual(self.digital_service.digital.value, [False, False])
+        self.client.connect()
+
+        client_device = self.client.devices["00:01:02:03:04:05"]
+        client_device[0].On = True
+        self.gpio.WriteValue.assert_called_once_with([1], aio_offset(0))
+        client_device[1].On = False
+        self.gpio.WriteValue.assert_called_with([0], aio_offset(1))
