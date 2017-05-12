@@ -2,6 +2,7 @@ import threading
 from coiot.device_action_list import DeviceActionList
 from . import db_interface
 import logging
+import time
 
 log = logging.getLogger('BLE')
 
@@ -20,19 +21,30 @@ class BluezBLEDriver:
             self.stopped = True
 
         def run(self):
-            log.info("connecting to devices...")
-            self.driver.client.connect()
-            log.info("connected")
             while not self.stopped:
-                t = self.driver.action_list.pop()
-                if t is not None:
-                    self.driver.ble_set(*t)
+                dkprev = tuple(self.driver.client.devices.keys())
+                self.driver.client.refresh_devices()
+                for a in [a
+                          for a in self.driver.client.devices.keys()
+                          if a not in dkprev]:
+                    self.driver.update_status(a, Online=True)
+                for a in [a
+                          for a in dkprev
+                          if a not in self.driver.client.devices.keys()]:
+                    self.driver.update_status(a, Online=False)
+                if not self.driver.client.devices:
+                    time.sleep(1)
+                else:
+                    t = self.driver.action_list.pop()
+                    if t is not None:
+                        self.driver.ble_set(*t)
 
     def __init__(self, client, updates):
         self.client = client
         self.thread = BluezBLEDriver.BluezThread(self)
         self.action_list = DeviceActionList()
         self.updates = updates
+        self.devices = {}
         db_interface.BLEDriverParameters.register_driver(self)
         self.thread.start()
 
@@ -46,6 +58,16 @@ class BluezBLEDriver:
             setattr(ble_dev, k, v)
         self.updates.set(device, k, v)
         log.info("success {} {} = {}".format(device.Mac, k, v))
+
+    def update_status(self, Mac, Online):
+        self.updates.set(self.devices[Mac], 'Online', Online)
+
+    def declare_error(self, Mac):
+        self.updates.set(self.devices[Mac], 'Error', True)
+        self.updates.set(self.devices[Mac], 'Online', False)
+
+    def register(self, dev, dbdev):
+        self.devices[dbdev.Mac] = dev
 
     def __str__(self):
         return type(self).__name__

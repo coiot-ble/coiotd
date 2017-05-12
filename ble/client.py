@@ -116,26 +116,30 @@ class BleClient:
         log.info("new BleClient with adapter {}".format(adapter))
         self.adapter = adapter
         self.adapter.proxy.Powered = True
-
-    def connect(self):
         self.devices = {}
-        for a, d in self.adapter.devices.items():
-            if 'coiot' not in d.proxy.Alias.lower():
-                continue
-            log.info("connect to {}".format(d))
-            d.proxy.Connect()
-            log.info("connected to {}".format(d))
 
-            log.info("probe {}".format(d))
-            for driver in drivers:
-                devices = driver.probe(d)
-                for i, v in devices.items():
-                    da = self.devices.setdefault(a, {})
-                    da.setdefault(i, CompositeBleDevice()).extend(v)
-            log.info("probed {}".format(d))
-        for k, k2 in [(k, k2)
-                      for k in self.devices.keys()
-                      for k2 in self.devices[k].keys()]:
-            log.info("{}[{}]: {}".format(k, k2,
-                                         [a for a in dir(self.devices[k][k2])
-                                          if a[0].isupper()]))
+    def refresh_devices(self):
+        for a, d in self.adapter.devices.items():
+            try:
+                if a in self.devices:
+                    if not d.proxy.Connected:
+                        del self.devices[a]
+                    else:
+                        continue
+
+                if not d.proxy.Connected:
+                    continue
+
+                for driver in drivers:
+                    driver_devices = driver.probe(d)
+                    for i, v in driver_devices.items():
+                        da = self.devices.setdefault(a, {})
+                        da.setdefault(i, CompositeBleDevice()).extend(v)
+            except GLib.Error as e:
+                epart = e.message.split(':')
+                if epart[0] != "GDBus.Error":
+                    raise
+                if not epart[1].startswith("org.bluez.Error"):
+                    raise
+                emsg = ':'.join(epart[1:])
+                log.error("{}: {}".format(d, emsg))

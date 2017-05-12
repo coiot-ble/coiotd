@@ -34,6 +34,7 @@ class TestBle(unittest.TestCase):
                 gatt_uuid.formatUUID(gatt_uuid.AUTOMATION_IO): aiod
             }
         self.device.proxy.Alias = "Coiot dev"
+        self.device.proxy.Connected = True
 
         self.adapter = Mock()
         self.adapter.devices = {"00:01:02:03:04:05": self.device}
@@ -42,8 +43,7 @@ class TestBle(unittest.TestCase):
 
     def test_setup(self):
         self.assertTrue(self.adapter.proxy.Powered)
-        self.client.connect()
-        self.device.proxy.Connect.assert_called_once()
+        self.client.refresh_devices()
         self.gpio.ReadValue.assert_called_once_with(aio_offset(None))
         self.assertEqual(1, len(self.client.devices))
 
@@ -59,7 +59,7 @@ class TestDigital(TestBle):
 
     def setUp(self):
         super().setUp()
-        self.client.connect()
+        self.client.refresh_devices()
         self.client_device = self.client.devices["00:01:02:03:04:05"]
 
     def test_setup(self):
@@ -88,7 +88,7 @@ class TestMultipleDigital(TestBle):
         self.gpio.ReadValue.return_value = [0, 0]
 
     def test_setup(self):
-        self.client.connect()
+        self.client.refresh_devices()
         self.assertEqual(1, len(self.client.devices))
 
         client_device = self.client.devices["00:01:02:03:04:05"]
@@ -104,7 +104,7 @@ class TestMultipleDigital(TestBle):
         self.gpio.ReadValue.assert_called_once_with(aio_offset(1))
 
     def test_value(self):
-        self.client.connect()
+        self.client.refresh_devices()
 
         client_device = self.client.devices["00:01:02:03:04:05"]
         client_device[0].On = True
