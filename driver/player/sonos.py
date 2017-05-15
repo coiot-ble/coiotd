@@ -58,10 +58,9 @@ class SonosPlayer:
         self.driver = driver
         self.soco = soco
 
-    def update_device(self, Playing=None):
-        if Playing is not None:
-            self.driver.set_zone_device(self.soco.player_name,
-                                        'Playing', Playing)
+    def update_device(self, **kwargs):
+        for k, v in kwargs:
+            self.driver.set_zone_device(self.soco.player_name, k, v)
 
     @property
     def Playing(self):
