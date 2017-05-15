@@ -11,7 +11,8 @@ class CoiotDevice:
     """
     def __init__(self, db):
         self.db = db
-        self.db.driver.register(self, db)
+        if hasattr(self.db.driver, 'register'):
+            self.db.driver.register(self, db)
 
     def __getattr__(self, k):
         if k[0].islower():

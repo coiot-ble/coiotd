@@ -1,0 +1,13 @@
+<!DOCTYPE node PUBLIC
+"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd" >
+<node xmlns:doc="http://www.freedesktop.org/dbus/1.0/doc.dtd">
+	<interface name="org.coiot.Player1">
+		<property name="Playing" type="b" access="readwrite" />
+		<property name="CurrentSong" type="s" access="readwrite" />
+		<property name="NextSong" type="s" access="readwrite" />
+		<property name="SongDuration" type="u" access="readwrite" />
+		<property name="CurrentTime" type="u" access="readwrite" />
+		<property name="Volume" type="d" access="readwrite" />
+	</interface>
+</node>

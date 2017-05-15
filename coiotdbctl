@@ -2,6 +2,7 @@
 import argparse
 import cmd
 from ble.db_interface import BLEDriverParameters
+from driver.player.sonos import SonosDevice
 from coiot.db import CoiotDB, CoiotDBInterface
 import inspect
 
@@ -97,5 +98,6 @@ if __name__ == "__main__":
     args = ap.parse_args()
 
     BLEDriverParameters.register()
+    SonosDevice.register()
 
     CoiotCmd(args.database).cmdloop()

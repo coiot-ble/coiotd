@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     args = ap.parse_args()
 
-    for logn in 'DB', 'DBus', 'Device', 'BLE', 'Test':
+    for logn in 'DB', 'DBus', 'Device', 'BLE', 'Test', 'SONOS':
         log = logging.getLogger(logn)
         log.addHandler(logging.StreamHandler(sys.stdout))
         if args.verbose:
@@ -40,9 +40,14 @@ if __name__ == "__main__":
         import ble.bluez
         from ble.client import BleClient
         import ble.driver
+        import driver.player.sonos
+
+        drivers = set()
         adapter = ble.bluez.DBusBluez().adapters['hci0']
         client = BleClient(adapter)
-        driver = ble.driver.BluezBLEDriver(client, updates)
+        drivers.add(ble.driver.BluezBLEDriver(client, updates))
+
+        drivers.add(driver.player.sonos.SonosDriver(updates))
 
     db = CoiotDB(args.db)
     devices = CoiotDevice.load(db)
@@ -64,4 +69,5 @@ if __name__ == "__main__":
         loop.run()
     finally:
         if not args.mock:
-            driver.thread.stop()
+            for d in drivers:
+                d.thread.stop()

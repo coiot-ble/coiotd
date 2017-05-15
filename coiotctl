@@ -50,6 +50,8 @@ class CoiotCmd(cmd.Cmd):
             val = val[1:-1]
         elif val in ("False", "True"):
             val = (val == "True")
+        elif '.' in val:
+            val = float(val)
         else:
             val = int(val)
         setattr(self.coiot.devices[dev], f, val)

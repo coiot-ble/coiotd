@@ -1,5 +1,8 @@
 import unittest
 from coiot.db import CoiotDB, Switchable, Displayable
+import test.logging
+
+test.logging.activate_log('DB')
 
 
 class CoiotDBTestSetup(unittest.TestCase):
