@@ -2,6 +2,7 @@ import sqlite3
 import logging
 from coiot.datetime import CoiotDatetime
 import os
+import glob
 
 log = logging.getLogger('DB')
 
@@ -353,10 +354,17 @@ class CoiotDB:
         self.db = sqlite3.connect(filename)
         self.db.isolation_level = None
         version = next(iter(self.db.execute("PRAGMA USER_VERSION")))[0]
-        if version != 1:
-            with open(os.path.dirname(os.path.realpath(__file__)) +
-                      '/../sql/create_db.sql') as f:
-                self.db.executescript(f.read())
+        if version == 0:
+            log.info("create database {}".format(filename))
+        curpath = os.path.dirname(os.path.realpath(__file__))
+        globexpr = "{}/../sql/*.sql".format(curpath)
+        for f in sorted(glob.glob(globexpr)):
+            v = int(f.split('/')[-1].split('-')[0])
+            if v > version:
+                log.info("execute {}".format(f))
+                with open(f, 'r') as fd:
+                    self.db.executescript(fd.read())
+            self.db.execute("PRAGMA USER_VERSION={}".format(v))
 
     @property
     def devices(self):
