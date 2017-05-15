@@ -47,7 +47,7 @@ class CoiotCmd(cmd.Cmd):
         lh, val = (s.strip() for s in line.split('='))
         dev, f = lh.split('.')
         if (val[0] == '"' or val[0] == "'") and val[-1] == val[0]:
-            val = val[1:-2]
+            val = val[1:-1]
         elif val in ("False", "True"):
             val = (val == "True")
         else:
