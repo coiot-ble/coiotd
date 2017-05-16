@@ -40,7 +40,6 @@ being unique for each entry and never reused.
 # SWITCHABLE
 * ID
 * Device: foreign key to DEVICE
-* FutureOn
 
 # SWITCHABLE_LOG
 * ID
@@ -87,3 +86,9 @@ through DBus.
 * ID
 * Device: foreign key to DEVICE
 * Mac: BLE device MAC address
+* Idx: COIoT device Index for BLE devices with array characteristics (eg: Automation IO)
+
+# DRIVER_SONOS
+* ID
+* Device: foreign key to DEVICE
+* Zone: name of the SONOS player

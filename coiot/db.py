@@ -88,6 +88,7 @@ class Displayable:
             return False
 
         self.__id, self.name, self.type = r
+
         self.FutureName = self.name
         self.FutureType = self.type
         return True
@@ -111,21 +112,22 @@ class Displayable:
         if r.lastrowid is None:
             raise Exception("Could not install the Displayable interface, "
                             "have you specified a correct type ?")
-        self.FutureName = Name
-        self.FutureType = Type
         self.__id = r.lastrowid
+
+        self.name = Name
+        self.type = Type
+
+        self.FutureName = self.name
+        self.FutureType = self.type
 
     @property
     def Name(self):
-        return self.db.execute("""
-            SELECT Name
-            FROM DISPLAYABLE
-            WHERE ID = ?
-            """, self.__id).fetchone()[0]
+        return self.name
 
     @Name.setter
     def Name(self, value):
         value = sqlite_cast(str, value)
+        self.name = value
         self.db.execute("""
             UPDATE DISPLAYABLE
             SET Name = ?
@@ -134,17 +136,12 @@ class Displayable:
 
     @property
     def Type(self):
-        return self.db.execute("""
-            SELECT DISPLAYABLE_TYPE.Name
-            FROM DISPLAYABLE
-            LEFT JOIN DISPLAYABLE_TYPE
-            ON DISPLAYABLE_TYPE.ID = DISPLAYABLE.Type
-            WHERE DISPLAYABLE.ID = ?
-            """, self.__id).fetchone()[0]
+        return self.type
 
     @Type.setter
     def Type(self, value):
         value = sqlite_cast(str, value)
+        self.type = value
         if value is None:
             self.db.execute("""
                 UPDATE DISPLAYABLE
@@ -167,64 +164,49 @@ class Switchable:
     @classmethod
     def load(Cls, self):
         r = self.db.execute("""
-            SELECT ID, FutureOn
+            SELECT SWITCHABLE.ID, Value
             FROM SWITCHABLE
-            WHERE Device = ?;
+            JOIN SWITCHABLE_LOG
+            ON SWITCHABLE.ID = SWITCHABLE_LOG.Switchable
+            WHERE Device = ?
+            GROUP BY SWITCHABLE.ID
+            LIMIT 1;
             """, self.id).fetchone()
 
         if r is None:
             return False
 
-        self.__id, self.future_on = r[0], bool(r[1])
+        self.__id, self.on = r[0], bool(r[1])
+        self.FutureOn = self.on
         return True
 
     @classmethod
     def install(Cls, self, On):
         On = sqlite_cast(bool, On)
         r = self.db.execute("""
-            INSERT INTO SWITCHABLE(Device, FutureOn)
-            VALUES(?, ?);
-            """, self.id, On)
+            INSERT INTO SWITCHABLE(Device)
+            VALUES(?);
+            """, self.id)
         self.__id = r.lastrowid
         self.db.execute("""
             INSERT INTO SWITCHABLE_LOG(Date, Switchable, Value)
             VALUES(?, ?, ?)
             """, CoiotDatetime.now(), self.__id, On)
+        self.on = On
+        self.FutureOn = self.on
 
     @property
     def On(self):
-        return bool(self.db.execute("""
-            SELECT Value
-            FROM SWITCHABLE_LOG
-            WHERE Switchable = ?
-            ORDER BY ID DESC
-            LIMIT 1
-            """, self.__id).fetchone()[0])
+        return self.on
 
     @On.setter
     def On(self, value):
         value = sqlite_cast(bool, value)
+        self.on = value
         self.db.execute("""
             INSERT INTO SWITCHABLE_LOG(Date, Switchable, Value)
             VALUES(?, ?, ?)
-            """, CoiotDatetime.now(), self.__id, value)
-
-    @property
-    def FutureOn(self):
-        return bool(self.db.execute("""
-            SELECT FutureOn
-            FROM SWITCHABLE
-            WHERE ID = ?
-            """, self.__id).fetchone()[0])
-
-    @FutureOn.setter
-    def FutureOn(self, value):
-        value = sqlite_cast(bool, value)
-        self.db.execute("""
-            UPDATE SWITCHABLE
-            SET FutureOn = ?
-            WHERE ID = ?
-            """, value, self.__id)
+            """, CoiotDatetime.now(), self.__id, self.on)
 
 
 def Composite():

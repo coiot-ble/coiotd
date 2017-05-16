@@ -23,3 +23,26 @@ class DeviceActionList:
             else:
                 # timeout
                 return None
+
+
+class DALDevice:
+    """
+    Abstraction to access a DB-device from a thread:
+    - setting attribute will be done through the DeviceActionList
+    - getting attributes is done from the DB-device directly (because
+    of caching, no database read should happen)
+    """
+    def __init__(self, device, dal):
+        self.dal = dal
+        self.device = device
+
+    def __getattr__(self, k):
+        if not k[0].isupper():
+            return super().__getattr__(self, k)
+        return getattr(self.device, k)
+
+    def __setattr__(self, k, v):
+        if not k[0].isupper():
+            super().__setattr__(self, k, v)
+        else:
+            self.dal.set(self.device, k, v)

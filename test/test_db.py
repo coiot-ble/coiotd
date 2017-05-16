@@ -136,20 +136,6 @@ class SwitchableUnitTest(OneDeviceTestSetup):
         self.reload()
         self.assertTrue(not self.device.On)
 
-    def test_set_future(self):
-        self.device.On = True
-        self.device.FutureOn = False
-        self.reload()
-        self.assertEqual(self.device.FutureOn, False)
-
-        self.device.On = self.device.FutureOn
-        self.reload()
-        self.assertEqual(self.device.FutureOn, self.device.On)
-
-        self.device.FutureOn = True
-        self.reload()
-        self.assertEqual(self.device.FutureOn, True)
-
 
 class SwitchableAndDisplayableUnitTest(OneDeviceTestSetup):
     """
