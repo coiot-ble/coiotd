@@ -10,46 +10,38 @@ log = logging.getLogger('BLE')
 db_interface.BLEDriverParameters.register()
 
 
-class BluezBLEDriver:
-    class BluezThread(threading.Thread):
-        def __init__(self, driver):
-            super().__init__()
-            self.driver = driver
-            self.stopped = False
-
-        def stop(self):
-            self.stopped = True
-
-        def run(self):
-            while not self.stopped:
-                dkprev = tuple(self.driver.client.devices.keys())
-                self.driver.client.refresh_devices()
-                for a in [a
-                          for a in self.driver.client.devices.keys()
-                          if a not in dkprev]:
-                    self.driver.update_status(a, Online=True)
-                for a in [a
-                          for a in dkprev
-                          if a not in self.driver.client.devices.keys()]:
-                    self.driver.update_status(a, Online=False)
-                if not self.driver.client.devices:
-                    time.sleep(1)
-                else:
-                    t = self.driver.action_list.pop()
-                    if t is not None:
-                        self.driver.ble_set(*t)
-
+class BluezBLEDriver(threading.Thread):
     def __init__(self, client, updates):
+        super().__init__()
         self.client = client
-        self.thread = BluezBLEDriver.BluezThread(self)
         self.action_list = DeviceActionList()
         self.updates = updates
         self.devices = {}
         db_interface.BLEDriverParameters.register_driver(self)
-        self.thread.start()
+        self.stopped = False
+        self.start()
 
     def stop(self):
-        self.thread.stop()
+        self.stopped = True
+
+    def run(self):
+        while not self.stopped:
+            dkprev = tuple(self.client.devices.keys())
+            self.client.refresh_devices()
+            for a in [a
+                      for a in self.client.devices.keys()
+                      if a not in dkprev]:
+                self.update_status(a, Online=True)
+            for a in [a
+                      for a in dkprev
+                      if a not in self.client.devices.keys()]:
+                self.update_status(a, Online=False)
+            if not self.client.devices:
+                time.sleep(1)
+            else:
+                t = self.action_list.pop()
+                if t is not None:
+                    self.ble_set(*t)
 
     def ble_set(self, device, k, v):
         log.info("{} {} = {}".format(device.Mac, k, v))
