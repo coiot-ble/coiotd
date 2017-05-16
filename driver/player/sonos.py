@@ -97,7 +97,7 @@ class SonosPlayer:
         self.zone = self.soco.player_name
 
     def update_device(self, **kwargs):
-        for k, v in kwargs:
+        for k, v in kwargs.items():
             self.driver.set_zone_device(self.zone, k, v)
 
     @property

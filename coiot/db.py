@@ -247,10 +247,12 @@ def Composite():
         def load_interface(self, Interface):
             if Interface.load(self):
                 add_interface(self, Interface)
+                log.info('loaded {} on {}'.format(Interface.__name__, self))
 
         def install_interface(self, Interface, *args, **kwargs):
             Interface.install(self, *args, **kwargs)
             add_interface(self, Interface)
+            log.info('installed {} on {}'.format(Interface.__name__, self))
 
     return CompositeCls
 

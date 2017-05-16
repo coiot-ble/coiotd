@@ -25,7 +25,11 @@ if __name__ == "__main__":
 
     for logn in 'DB', 'DBus', 'Device', 'BLE', 'Test', 'SONOS':
         log = logging.getLogger(logn)
-        log.addHandler(logging.StreamHandler(sys.stdout))
+        bf = logging.Formatter('{asctime} {name:8s} {levelname:8s} {message}',
+                               style='{')
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(bf)
+        log.addHandler(handler)
         if args.verbose:
             log.level = logging.DEBUG
         else:

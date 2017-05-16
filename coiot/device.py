@@ -42,4 +42,4 @@ class CoiotDevice:
         return [CoiotDevice(d) for d in db.devices.values()]
 
     def __str__(self):
-        return "<Device {}>".format(self.ID)
+        return "device {}".format(self.ID)

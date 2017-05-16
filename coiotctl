@@ -36,7 +36,16 @@ class CoiotCmd(cmd.Cmd):
         """
         List all COIoT devices
         """
-        print(self.coiot.devices)
+        for ID, d in sorted(self.coiot.devices.items()):
+            print('Device {}:'.format(ID))
+            for f in dir(d):
+                if not f[0].isupper():
+                    continue
+                v = getattr(d, f)
+                if callable(v):
+                    continue
+
+                print('    {} = {}'.format(f, v))
 
     def do_set(self, line):
         """
@@ -44,7 +53,8 @@ class CoiotCmd(cmd.Cmd):
 
         # set device.Property = value
         """
-        lh, val = (s.strip() for s in line.split('='))
+        splitline = line.split('=')
+        lh, val = splitline[0].strip(), '='.join(splitline[1:]).strip()
         dev, f = lh.split('.')
         if (val[0] == '"' or val[0] == "'") and val[-1] == val[0]:
             val = val[1:-1]
@@ -55,6 +65,35 @@ class CoiotCmd(cmd.Cmd):
         else:
             val = int(val)
         setattr(self.coiot.devices[dev], f, val)
+
+    def complete_getset(self, text, line, begidx, endidx):
+        if not text:
+            return list(self.coiot.devices.keys())
+
+        if '.' in text:
+            split = text.split('.')
+            text, ftgt = split[0], '.'.join(split[1:])
+        else:
+            ftgt = ''
+        if text.strip() in self.coiot.devices.keys():
+            return [text + '.' + f
+                    for f in dir(self.coiot.devices[text])
+                    if f[0].isupper() and f.startswith(ftgt)]
+
+    def complete_get(self, *args):
+        return self.complete_getset(*args)
+
+    def complete_set(self, text, *args):
+        if '=' not in text:
+            cgs = self.complete_getset(text, *args)
+            if not cgs:
+                return []
+
+            if '.' in cgs[0]:
+                return [t + ' = ' for t in cgs]
+            else:
+                return cgs
+        return [text]
 
     def do_get(self, line):
         """

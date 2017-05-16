@@ -32,7 +32,7 @@ class DBusDevice:
         if key[0].islower():
             return super().__getattr__(key)
         v = getattr(self.proxy, key)
-        log.debug("get {}.{} = {}".format(self.proxy, key, v))
+        log.debug("get {}.{} = {}".format(self.proxy.ID, key, v))
 
         return v if v is not None else ''
 

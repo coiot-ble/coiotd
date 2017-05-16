@@ -15,7 +15,6 @@ class BLEDriverParameters:
         if r is None:
             return False
         self.__id, self.Mac, self.Idx = r
-        log.info("driver loaded for {}".format(self))
         return True
 
     @classmethod
@@ -29,7 +28,6 @@ class BLEDriverParameters:
         self.__id = r.lastrowid
         self.Mac = Mac
         self.Idx = Idx
-        log.info("install driver for {}".format(self))
 
     @property
     def driver(self):
