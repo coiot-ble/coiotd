@@ -38,5 +38,5 @@ class DBusNode:
         return children
 
     def __repr__(self):
-        return '{}({}, \'{}\', \'{}\')'.format(type(self).__name__, self.bus,
-                                               self.service, self.path)
+        return '{}(\'{}\', \'{}\')'.format(type(self).__name__,
+                                           self.service, self.path)
