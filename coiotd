@@ -5,7 +5,7 @@ import pydbus
 import coiot.dbus
 from coiot.device import CoiotDevice
 from coiot.device_action_list import DeviceActionList
-from coiot.db import CoiotDB
+from coiot.db import CoiotDB, CoiotDBInterface
 import logging
 import sys
 import argparse
@@ -51,6 +51,19 @@ if __name__ == "__main__":
 
     db = CoiotDB(args.db)
     devices = CoiotDevice.load(db)
+
+    for i in CoiotDBInterface.interfaces:
+        if hasattr(i, "autodetect"):
+            d = i.autodetect()
+            if d:
+                log.info("install {} for {}".format(i.__name__, d))
+                new = db.install()
+                if hasattr(d, 'keys') and hasattr(d, '__getitem__'):
+                    i.install(new, **d)
+                elif hasattr(d, '__iter__'):
+                    i.install(new, *d)
+                else:
+                    i.install(new, d)
 
     def idle_push_updates():
         while updates:

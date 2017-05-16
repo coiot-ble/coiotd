@@ -232,27 +232,25 @@ def Composite():
     Kind of a magical class that can have interfaces installed on a
     per-instance basis
     """
+    class DefaultObject:
+        pass
 
-    def add_interface(Interface):
+    def add_interface(self, Interface):
         CompositeCls.__bases__ = (Interface,) + CompositeCls.__bases__
         CompositeCls.__name__ = ", ".join([b.__name__
                                            for b in CompositeCls.__bases__
                                            if b is not DefaultObject])
-
-    class DefaultObject:
-        pass
+        if hasattr(Interface, 'init_interface'):
+            Interface.init_interface(self)
 
     class CompositeCls(DefaultObject):
         def load_interface(self, Interface):
             if Interface.load(self):
-                add_interface(Interface)
+                add_interface(self, Interface)
 
         def install_interface(self, Interface, *args, **kwargs):
-            """
-            Set up support for the given interface in the database
-            """
             Interface.install(self, *args, **kwargs)
-            add_interface(Interface)
+            add_interface(self, Interface)
 
     return CompositeCls
 

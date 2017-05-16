@@ -21,7 +21,6 @@ class SonosDevice:
             return False
 
         self.__id, self.Zone = r
-        SonosDevice._SonosDevice__update(self)
         log.info("driver {} loaded for {}".format(Cls.__name__, self))
         return True
 
@@ -35,10 +34,13 @@ class SonosDevice:
             """, self.id, Zone)
         self.__id = r.lastrowid
         self.Zone = Zone
-        self.__update()
         log.info("install driver {} for {}".format(Cls.__name__, self))
 
-    def __update(self):
+    @classmethod
+    def init_interface(Cls, self):
+        self.playing = False
+        if not SonosDriver.instance:
+            return
         player = SonosDriver.instance.get_player(self.Zone)
         for f in dir(player):
             if f[0].isupper():
@@ -48,19 +50,53 @@ class SonosDevice:
     def register(Cls):
         CoiotDBInterface.declare(Cls)
 
+    @classmethod
+    def autodetect(self):
+        log.info("autodetect for {}".format(self.__class__.__name__))
+        zones = set()
+        for pl in SonosDriver.instance.players:
+            if pl.zone not in SonosDriver.instance.devices:
+                zones.add(pl.zone)
+
+        return zones
+
     @property
     def driver(self):
         return SonosDriver.instance
+
+    @property
+    def CurrentTime(self):
+        ct = time.time()
+        if self.Playing:
+            self.current_time += ct - self.refresh_time
+        self.refresh_time = ct
+
+        return self.current_time
+
+    @CurrentTime.setter
+    def CurrentTime(self, v):
+        self.current_time = v
+        self.refresh_time = time.time()
+
+    @property
+    def Playing(self):
+        return self.playing
+
+    @Playing.setter
+    def Playing(self, v):
+        getattr(self, 'CurrentTime')
+        self.playing = v
 
 
 class SonosPlayer:
     def __init__(self, driver, soco):
         self.driver = driver
         self.soco = soco
+        self.zone = self.soco.player_name
 
     def update_device(self, **kwargs):
         for k, v in kwargs:
-            self.driver.set_zone_device(self.soco.player_name, k, v)
+            self.driver.set_zone_device(self.zone, k, v)
 
     @property
     def Playing(self):
@@ -171,28 +207,25 @@ class SonosDriver:
                     except soco.exceptions.SoCoUPnPException as e:
                         log.error(e)
                         d = t[0]
-                        d.db._SonosDevice__update()
+                        SonosDevice.force_refresh(d.db)
 
         def tick(self, elapsed):
             for d in self.driver.devices.values():
-                if d.Playing:
-                    self.driver.updates.set(d, 'CurrentTime',
-                                            d.CurrentTime + elapsed)
-                    self.refresh.setdefault(d, 0)
-                    self.refresh[d] += elapsed
-                    if self.refresh[d] > 10:
-                        self.refresh[d] = 0
+                self.refresh.setdefault(d, 0)
+                self.refresh[d] += elapsed
 
-                        playing = self.driver.get_soco(d, 'Playing')
-                        if not playing:
-                            log.error("{} stopped playing".format(d))
-                            self.driver.set_soco(d, 'Playing', playing)
+                if self.refresh[d] > 3:
+                    self.refresh[d] = 0
+
+                    playing = self.driver.get_soco(d, 'Playing')
+                    if playing != d.Playing:
+                        self.driver.set_soco(d, 'Playing', playing)
 
     def __init__(self, updates):
         SonosDevice.register()
         self.updates = updates
         self.action_list = DeviceActionList()
-        self.zones = [SonosPlayer(self, z) for z in soco.discover()]
+        self.players = [SonosPlayer(self, soco) for soco in soco.discover()]
         self.devices = {}
         self.thread = SonosDriver.SonosThread(self)
         self.thread.start()
@@ -212,8 +245,8 @@ class SonosDriver:
         return getattr(player, k)
 
     def get_player(self, Zone):
-        return next(iter([z for z in self.zones
-                          if z.soco.player_name == Zone]))
+        return next(iter([pl for pl in self.players
+                          if pl.zone == Zone]))
 
     def set_zone_device(self, Zone, k, v):
         self.updates.set(self.devices[Zone], k, v)
