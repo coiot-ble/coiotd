@@ -52,6 +52,20 @@ class TestBle(unittest.TestCase):
         self.assertEqual(1, len(client_device))
         self.assertEqual(False, client_device[0].On)
 
+    def test_switch_online_offline(self):
+        cache = Mock()
+        cache.Mac = "00:01:02:03:04:05"
+        cache.Idx = 0
+        self.assertTrue(self.driver.register(cache) is not None)
+
+        self.device.proxy.Connected = False
+        self.driver.refresh_devices()
+        self.assertTrue(cache.Mac not in self.driver.ble_devices)
+
+        self.device.proxy.Connected = True
+        self.driver.refresh_devices()
+        self.assertTrue(cache.Mac in self.driver.ble_devices)
+
 
 class TestDigital(TestBle):
     """

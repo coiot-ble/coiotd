@@ -1,6 +1,6 @@
 import threading
 from coiot.device_action_list import DeviceActionList, DALDevice
-from ble.device import CompositeBleDevice, drivers
+from ble.device import CompositeBleDevice, drivers as ble_drivers
 from gi.repository import GLib
 from . import db_interface
 import logging
@@ -13,9 +13,10 @@ db_interface.BLEDriverParameters.register()
 
 
 class BluezBLEDriver(threading.Thread):
-    def __init__(self, adapter, updates, autostart=True):
+    def __init__(self, adapter, updates, autostart=True, drivers=ble_drivers):
         super().__init__()
         self.adapter = adapter
+        self.drivers = drivers
         self.action_list = DeviceActionList()
         self.updates = updates
         self.cache = {}
@@ -41,7 +42,7 @@ class BluezBLEDriver(threading.Thread):
                 if not d.proxy.Connected:
                     continue
 
-                for driver in drivers:
+                for driver in self.drivers:
                     driver_devices = driver.probe(d)
                     for i, v in driver_devices.items():
                         da = self.ble_devices.setdefault(a, {})
@@ -60,23 +61,24 @@ class BluezBLEDriver(threading.Thread):
             dkprev = set(self.ble_devices.keys())
             self.refresh_devices()
             for a in set(self.ble_devices.keys()).union(dkprev):
-                self.cache[a].Online = (a in self.ble_devices.keys())
+                for cd in self.cache[a].values():
+                    cd.Online = (a in self.ble_devices.keys())
 
             if not self.ble_devices:
                 time.sleep(1)
-            else:
-                t = self.action_list.pop()
-                if t is not None:
-                    d, k, v = t
-                    log.info("{} {} = {}".format(d.Mac, k, v))
-                    ble_dev = self.ble_devices[d.Mac][d.Idx]
-                    setattr(ble_dev, k, v)
-                    setattr(self.devices[d.Mac], k, v)
-                    log.info("success {}[{}] {} = {}".format(d.Mac, d.Idx,
-                                                             k, v))
+                continue
+
+            t = self.action_list.pop()
+            if t is not None:
+                d, k, v = t
+                ble_dev = self.ble_devices[d.Mac][d.Idx]
+                setattr(ble_dev, k, v)
+                setattr(self.devices[d.Mac], k, v)
+                log.info("update {}[{}] {} = {}".format(d.Mac, d.Idx, k, v))
 
     def register(self, cache):
-        self.cache[cache.Mac][cache.Idx] = DALDevice(cache, self.updates)
+        da = self.cache.setdefault(cache.Mac, {})
+        da[cache.Idx] = DALDevice(cache, self.updates)
         return DALDevice(cache, self.action_list)
 
     def __str__(self):

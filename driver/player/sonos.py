@@ -225,8 +225,7 @@ class SonosDriver(threading.Thread):
                     player = self.devices[d.Zone]
                     setattr(player, k, v)
                     setattr(player.cache, k, v)
-                    log.info("success SONOS \"{}\" {} = {}".format(d.Zone,
-                                                                   k, v))
+                    log.info("update \"{}\" {} = {}".format(d.Zone, k, v))
                 except soco.exceptions.SoCoUPnPException as e:
                     log.error(e)
 
