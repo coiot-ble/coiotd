@@ -1,7 +1,7 @@
 import soco
 import soco.exceptions
 import threading
-from coiot.device_action_list import DeviceActionList
+from coiot.device_action_list import DeviceActionList, DALDevice
 from coiot.db import CoiotDBInterface, sqlite_cast
 import logging
 import time
@@ -40,14 +40,13 @@ class SonosDevice:
         if not SonosDriver.instance:
             return
         try:
-            player = SonosDriver.instance.get_player(self.Zone)
+            player = SonosDriver.instance.devices[self.Zone]
             self.Online = True
             for f in dir(player):
                 if f[0].isupper():
                     setattr(self, f, getattr(player, f))
         except StopIteration:
             self.Online = False
-            self.CurrentTime = 0
 
     @classmethod
     def register(Cls):
@@ -55,24 +54,23 @@ class SonosDevice:
 
     @classmethod
     def autodetect(self):
-        zones = set()
-        for pl in SonosDriver.instance.players:
-            if pl.zone not in SonosDriver.instance.devices:
-                zones.add(pl.zone)
-
-        return zones
+        return list((z
+                     for z, p in SonosDriver.instance.devices.items()
+                     if not p.cache))
 
     @property
     def driver(self):
         return SonosDriver.instance
 
-    @property
-    def CurrentTime(self):
+    def refresh_CurrentTime(self):
         ct = time.time()
         if self.Playing:
             self.current_time += ct - self.refresh_time
         self.refresh_time = ct
 
+    @property
+    def CurrentTime(self):
+        self.refresh_CurrentTime()
         return int(self.current_time)
 
     @CurrentTime.setter
@@ -86,39 +84,52 @@ class SonosDevice:
 
     @Playing.setter
     def Playing(self, v):
-        getattr(self, 'CurrentTime')
+        self.refresh_CurrentTime()
         self.playing = v
 
 
 class SonosPlayer:
-    def __init__(self, driver, soco):
+    def __init__(self, driver, phy):
         self.driver = driver
-        self.soco = soco
-        self.zone = self.soco.player_name
+        self.phy = phy
+        self.zone = self.phy.player_name
+        self.cache = None
 
-    def update_device(self, **kwargs):
-        for k, v in kwargs.items():
-            self.driver.set_zone_device(self.zone, k, v)
+    def safe_transport_info(self):
+        try:
+            return self.phy.get_current_transport_info()
+        except ConnectionError as e:
+            log.error(e)
+            self.cache.Online = False
+            return {'current_transport_state': 'STOPPED'}
+
+    def safe_track_info(self):
+        try:
+            return self.phy.get_current_track_info()
+        except ConnectionError as e:
+            log.error(e)
+            self.cache.Online = False
+            return {'duration': 0, 'position': 0, 'uri': ''}
 
     @property
     def Playing(self):
-        cti = self.soco.get_current_transport_info()
+        cti = self.safe_transport_info()
         return cti['current_transport_state'] == 'PLAYING'
 
     @Playing.setter
     def Playing(self, v):
         if v:
-            self.soco.play()
+            self.phy.play()
         else:
-            self.soco.pause()
+            self.phy.pause()
 
     @property
     def Volume(self):
-        return self.soco.volume / 100.0
+        return self.phy.volume / 100.0
 
     @Volume.setter
     def Volume(self, v):
-        self.soco.volume = round(v * 100)
+        self.phy.volume = round(v * 100)
 
     @classmethod
     def hms_to_s(Cls, hms):
@@ -134,35 +145,35 @@ class SonosPlayer:
 
     @property
     def SongDuration(self):
-        cti = self.soco.get_current_track_info()
+        cti = self.safe_track_info()
         return SonosPlayer.hms_to_s(cti['duration'])
 
     @property
     def CurrentTime(self):
-        cti = self.soco.get_current_track_info()
+        cti = self.safe_track_info()
         return SonosPlayer.hms_to_s(cti['position'])
 
     @CurrentTime.setter
     def CurrentTime(self, ts):
-        self.soco.seek(SonosPlayer.s_to_hms(ts))
+        self.phy.seek(SonosPlayer.s_to_hms(ts))
 
     @property
     def CurrentSong(self):
-        cti = self.soco.get_current_track_info()
+        cti = self.safe_track_info()
 
         return cti['uri']
 
     @CurrentSong.setter
     def CurrentSong(self, v):
-        self.soco.clear_queue()
+        self.phy.clear_queue()
         if v:
-            self.soco.add_uri_to_queue(v)
-            self.soco.play_from_queue(0)
-            self.update_device(Playing=True)
+            self.phy.add_uri_to_queue(v)
+            self.phy.play_from_queue(0)
+            self.cache.Playing = False
 
     @property
     def NextSong(self):
-        q = self.soco.get_queue(1, 1)
+        q = self.phy.get_queue(1, 1)
 
         if not q:
             return ''
@@ -173,84 +184,61 @@ class SonosPlayer:
     @NextSong.setter
     def NextSong(self, v):
         while self.NextSong:
-            self.soco.remove_from_queue(1)
-        self.soco.add_uri_to_queue(v)
+            self.phy.remove_from_queue(1)
+        self.phy.add_uri_to_queue(v)
 
 
-class SonosDriver:
+class SonosDriver(threading.Thread):
     instance = None
 
-    class SonosThread(threading.Thread):
-        def __init__(self, driver):
-            super().__init__()
-            self.driver = driver
-            self.stopped = False
-            self.last_tick = None
-            self.refresh = {}
-
-        def stop(self):
-            self.stopped = True
-
-        def run(self):
-            while not self.stopped:
-                tick = time.time()
-                if not self.last_tick:
-                    self.last_tick = tick
-
-                if tick - self.last_tick > 1:
-                    elapsed = int(tick - self.last_tick)
-                    self.tick(elapsed)
-                    self.last_tick += elapsed
-
-                t = self.driver.action_list.pop()
-                if t is not None:
-                    d, k, v = t
-                    try:
-                        self.driver.set_soco(d, k, v)
-                    except soco.exceptions.SoCoUPnPException as e:
-                        log.error(e)
-
-        def tick(self, elapsed):
-            for d in self.driver.devices.values():
-                self.refresh.setdefault(d, 0)
-                self.refresh[d] += elapsed
-
-                if self.refresh[d] > 3:
-                    self.refresh[d] = 0
-
-                    playing = self.driver.get_soco(d, 'Playing')
-                    if d.Playing != playing:
-                        self.driver.updates.set(d, 'Playing', playing)
-
-    def __init__(self, updates):
-        SonosDevice.register()
-        self.updates = updates
-        self.action_list = DeviceActionList()
-        self.players = [SonosPlayer(self, soco) for soco in soco.discover()]
-        self.devices = {}
-        self.thread = SonosDriver.SonosThread(self)
-        self.thread.start()
+    def __init__(self, cache_update):
+        super().__init__()
+        self.cache_update = cache_update
+        self.player_update = DeviceActionList()
+        self.devices = {phy.player_name: SonosPlayer(self, phy)
+                        for phy in soco.discover()}
+        self.stopped = False
+        self.last_tick = None
+        self.refresh = {}
         SonosDriver.instance = self
+        SonosDevice.register()
+        self.start()
 
-    def set(self, device, k, v):
-        self.action_list.set(device, k, v)
+    def stop(self):
+        self.stopped = True
 
-    def set_soco(self, device, k, v):
-        player = self.get_player(device.Zone)
-        setattr(player, k, v)
-        self.updates.set(device, k, v)
-        log.info("success SONOS \"{}\" {} = {}".format(device.Zone, k, v))
+    def run(self):
+        while not self.stopped:
+            tick = time.time()
+            if not self.last_tick:
+                self.last_tick = tick
 
-    def get_soco(self, device, k):
-        player = self.get_player(device.Zone)
-        return getattr(player, k)
+            if tick - self.last_tick > 1:
+                elapsed = int(tick - self.last_tick)
+                self.tick(elapsed)
+                self.last_tick += elapsed
 
-    def get_player(self, Zone):
-        return next(iter([pl for pl in self.players
-                          if pl.zone == Zone]))
+            t = self.player_update.pop()
+            if t is not None:
+                d, k, v = t
+                try:
+                    player = self.devices[d.Zone]
+                    setattr(player, k, v)
+                    setattr(player.cache, k, v)
+                    log.info("success SONOS \"{}\" {} = {}".format(d.Zone,
+                                                                   k, v))
+                except soco.exceptions.SoCoUPnPException as e:
+                    log.error(e)
 
-    def set_zone_device(self, Zone, k, v):
-        self.updates.set(self.devices[Zone], k, v)
+    def tick(self, elapsed):
+        for player in self.devices.values():
+            self.refresh.setdefault(player, 0)
+            self.refresh[player] += elapsed
 
-    def register(self, device, dbd):
-        self.devices[device.Zone] = device
+            if self.refresh[player] > 3:
+                self.refresh[player] = 0
+                player.cache.Playing = player.Playing
+
+    def register(self, cache):
+        self.devices[cache.Zone].cache = DALDevice(cache, self.cache_update)
+        return DALDevice(cache, self.player_update)

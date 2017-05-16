@@ -27,10 +27,9 @@ class DeviceActionList:
 
 class DALDevice:
     """
-    Abstraction to access a DB-device from a thread:
+    Abstraction to access a device from another thread:
     - setting attribute will be done through the DeviceActionList
-    - getting attributes is done from the DB-device directly (because
-    of caching, no database read should happen)
+    - getting attributes is done from the device directly
     """
     def __init__(self, device, dal):
         self.dal = dal
@@ -38,11 +37,12 @@ class DALDevice:
 
     def __getattr__(self, k):
         if not k[0].isupper():
-            return super().__getattr__(self, k)
+            return super().__getattr__(k)
         return getattr(self.device, k)
 
     def __setattr__(self, k, v):
         if not k[0].isupper():
-            super().__setattr__(self, k, v)
+            super().__setattr__(k, v)
         else:
-            self.dal.set(self.device, k, v)
+            if v != getattr(self.device, k):
+                self.dal.set(self.device, k, v)

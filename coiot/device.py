@@ -11,8 +11,12 @@ class CoiotDevice:
     """
     def __init__(self, db):
         self.db = db
+
+        if not hasattr(self.db, "driver"):
+            raise AttributeError("{} has no driver".format(self.db))
+
         if hasattr(self.db.driver, 'register'):
-            self.db.driver.register(self, db)
+            self.driver = self.db.driver.register(self)
 
     def __getattr__(self, k):
         if k[0].islower():
@@ -23,23 +27,27 @@ class CoiotDevice:
         if k[0].islower():
             super().__setattr__(k, v)
             return
-        if not hasattr(self.db, "driver"):
-            raise AttributeError("{} has no driver".format(self.db))
-        log.info('set {}.{} = {}'.format(self, k, v))
+        log.info('set {}.{} = {}'.format(self.ID, k, v))
         setattr(self.db, "Future"+k, v)
-        self.db.driver.set(self, k, v)
+        setattr(self.driver, k, v)
 
     def __dir__(self):
         return object.__dir__(self) + [p for p in dir(self.db)
                                        if p[0].isupper()]
 
     def update(self, k, v):
-        log.info('update {}.{} = {}'.format(self, k, v))
+        log.info('update {}.{} = {}'.format(self.ID, k, v))
         setattr(self.db, k, v)
 
     @classmethod
     def load(Cls, db):
-        return [CoiotDevice(d) for d in db.devices.values()]
+        valid_devices = []
+        for d in db.devices.values():
+            try:
+                valid_devices.append(CoiotDevice(d))
+            except AttributeError as e:
+                log.error(e)
+        return valid_devices
 
     def __str__(self):
         return "device {}".format(self.ID)

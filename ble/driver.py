@@ -1,5 +1,5 @@
 import threading
-from coiot.device_action_list import DeviceActionList
+from coiot.device_action_list import DeviceActionList, DALDevice
 from . import db_interface
 import logging
 import time
@@ -48,8 +48,8 @@ class BluezBLEDriver:
         db_interface.BLEDriverParameters.register_driver(self)
         self.thread.start()
 
-    def set(self, device, k, v):
-        self.action_list.set(device, k, v)
+    def stop(self):
+        self.thread.stop()
 
     def ble_set(self, device, k, v):
         log.info("{} {} = {}".format(device.Mac, k, v))
@@ -66,8 +66,9 @@ class BluezBLEDriver:
         self.updates.set(self.devices[Mac], 'Error', True)
         self.updates.set(self.devices[Mac], 'Online', False)
 
-    def register(self, dev, dbdev):
-        self.devices[dbdev.Mac] = dev
+    def register(self, dev):
+        self.devices[dev.Mac] = DALDevice(dev, self.updates)
+        return DALDevice(dev, self.action_list)
 
     def __str__(self):
         return type(self).__name__

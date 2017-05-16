@@ -27,9 +27,10 @@ class TestCoiotDevice(unittest.TestCase):
         self.assertEqual("Foo", self.devices[0].Name)
 
     def test_set(self):
+        MockDeviceDriver.driver.register.assert_called_once()
         d = self.devices[0]
         d.Name = "Bar"
         self.assertEqual("Foo", d.Name)
-        MockDeviceDriver.driver.set.assert_called_once_with(d, "Name", "Bar")
+        self.assertEqual("Bar", d.driver.Name)
         d.update("Name", "Bar")
         self.assertEqual("Bar", d.Name)
