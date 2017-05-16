@@ -71,7 +71,7 @@ class SonosDevice:
             self.current_time += ct - self.refresh_time
         self.refresh_time = ct
 
-        return self.current_time
+        return int(self.current_time)
 
     @CurrentTime.setter
     def CurrentTime(self, v):
