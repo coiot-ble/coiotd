@@ -21,7 +21,6 @@ class SonosDevice:
             return False
 
         self.__id, self.Zone = r
-        log.info("driver {} loaded for {}".format(Cls.__name__, self))
         return True
 
     @classmethod
@@ -34,17 +33,21 @@ class SonosDevice:
             """, self.id, Zone)
         self.__id = r.lastrowid
         self.Zone = Zone
-        log.info("install driver {} for {}".format(Cls.__name__, self))
 
     @classmethod
     def init_interface(Cls, self):
         self.playing = False
         if not SonosDriver.instance:
             return
-        player = SonosDriver.instance.get_player(self.Zone)
-        for f in dir(player):
-            if f[0].isupper():
-                setattr(self, f, getattr(player, f))
+        try:
+            player = SonosDriver.instance.get_player(self.Zone)
+            self.Online = True
+            for f in dir(player):
+                if f[0].isupper():
+                    setattr(self, f, getattr(player, f))
+        except StopIteration:
+            self.Online = False
+            self.CurrentTime = 0
 
     @classmethod
     def register(Cls):
@@ -52,7 +55,6 @@ class SonosDevice:
 
     @classmethod
     def autodetect(self):
-        log.info("autodetect for {}".format(self.__class__.__name__))
         zones = set()
         for pl in SonosDriver.instance.players:
             if pl.zone not in SonosDriver.instance.devices:
@@ -202,12 +204,11 @@ class SonosDriver:
 
                 t = self.driver.action_list.pop()
                 if t is not None:
+                    d, k, v = t
                     try:
-                        self.driver.set_soco(*t)
+                        self.driver.set_soco(d, k, v)
                     except soco.exceptions.SoCoUPnPException as e:
                         log.error(e)
-                        d = t[0]
-                        SonosDevice.force_refresh(d.db)
 
         def tick(self, elapsed):
             for d in self.driver.devices.values():
@@ -218,8 +219,8 @@ class SonosDriver:
                     self.refresh[d] = 0
 
                     playing = self.driver.get_soco(d, 'Playing')
-                    if playing != d.Playing:
-                        self.driver.set_soco(d, 'Playing', playing)
+                    if d.Playing != playing:
+                        self.driver.updates.set(d, 'Playing', playing)
 
     def __init__(self, updates):
         SonosDevice.register()
