@@ -3,7 +3,7 @@ import sys
 import unittest
 from unittest.mock import Mock
 from gi.repository import GLib
-from ble import client, gatt_uuid
+from ble import driver, gatt_uuid
 
 log = logging.getLogger('BLE')
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -39,15 +39,16 @@ class TestBle(unittest.TestCase):
         self.adapter = Mock()
         self.adapter.devices = {"00:01:02:03:04:05": self.device}
 
-        self.client = client.BleClient(self.adapter)
+        self.driver = driver.BluezBLEDriver(self.adapter, None,
+                                            autostart=False)
 
     def test_setup(self):
         self.assertTrue(self.adapter.proxy.Powered)
-        self.client.refresh_devices()
+        self.driver.refresh_devices()
         self.gpio.ReadValue.assert_called_once_with(aio_offset(None))
-        self.assertEqual(1, len(self.client.devices))
+        self.assertEqual(1, len(self.driver.ble_devices))
 
-        client_device = self.client.devices["00:01:02:03:04:05"]
+        client_device = self.driver.ble_devices["00:01:02:03:04:05"]
         self.assertEqual(1, len(client_device))
         self.assertEqual(False, client_device[0].On)
 
@@ -59,8 +60,8 @@ class TestDigital(TestBle):
 
     def setUp(self):
         super().setUp()
-        self.client.refresh_devices()
-        self.client_device = self.client.devices["00:01:02:03:04:05"]
+        self.driver.refresh_devices()
+        self.client_device = self.driver.ble_devices["00:01:02:03:04:05"]
 
     def test_setup(self):
         pass
@@ -88,10 +89,10 @@ class TestMultipleDigital(TestBle):
         self.gpio.ReadValue.return_value = [0, 0]
 
     def test_setup(self):
-        self.client.refresh_devices()
-        self.assertEqual(1, len(self.client.devices))
+        self.driver.refresh_devices()
+        self.assertEqual(1, len(self.driver.ble_devices))
 
-        client_device = self.client.devices["00:01:02:03:04:05"]
+        client_device = self.driver.ble_devices["00:01:02:03:04:05"]
         self.assertEqual(2, len(client_device))
         self.gpio.ReadValue.assert_called_once_with(aio_offset(None))
 
@@ -104,9 +105,9 @@ class TestMultipleDigital(TestBle):
         self.gpio.ReadValue.assert_called_once_with(aio_offset(1))
 
     def test_value(self):
-        self.client.refresh_devices()
+        self.driver.refresh_devices()
 
-        client_device = self.client.devices["00:01:02:03:04:05"]
+        client_device = self.driver.ble_devices["00:01:02:03:04:05"]
         client_device[0].On = True
         self.gpio.WriteValue.assert_called_once_with([1], aio_offset(0))
         client_device[1].On = False

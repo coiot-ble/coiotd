@@ -109,37 +109,3 @@ class CompositeBleDeviceDict(dict):
 class BleDevicesDict(dict):
     def __getitem__(self, k):
         return super().setdefault(k, CompositeBleDeviceDict())
-
-
-class BleClient:
-    def __init__(self, adapter):
-        log.info("new BleClient with adapter {}".format(adapter))
-        self.adapter = adapter
-        self.adapter.proxy.Powered = True
-        self.devices = {}
-
-    def refresh_devices(self):
-        for a, d in self.adapter.devices.items():
-            try:
-                if a in self.devices:
-                    if not d.proxy.Connected:
-                        del self.devices[a]
-                    else:
-                        continue
-
-                if not d.proxy.Connected:
-                    continue
-
-                for driver in drivers:
-                    driver_devices = driver.probe(d)
-                    for i, v in driver_devices.items():
-                        da = self.devices.setdefault(a, {})
-                        da.setdefault(i, CompositeBleDevice()).extend(v)
-            except GLib.Error as e:
-                epart = e.message.split(':')
-                if epart[0] != "GDBus.Error":
-                    raise
-                if not epart[1].startswith("org.bluez.Error"):
-                    raise
-                emsg = ':'.join(epart[1:])
-                log.error("{}: {}".format(d, emsg))

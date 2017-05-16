@@ -42,14 +42,13 @@ if __name__ == "__main__":
         MockDeviceDriver.driver.set = updates.set
     else:
         import ble.bluez
-        from ble.client import BleClient
         import ble.driver
         import driver.player.sonos
 
         drivers = set()
+
         adapter = ble.bluez.DBusBluez().adapters['hci0']
-        client = BleClient(adapter)
-        drivers.add(ble.driver.BluezBLEDriver(client, updates))
+        drivers.add(ble.driver.BluezBLEDriver(adapter, updates))
 
         drivers.add(driver.player.sonos.SonosDriver(updates))
 
